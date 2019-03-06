@@ -324,6 +324,7 @@ export class Parser {
         return t;
     }
 
+    // Returns the previous token. Sets the .lookahead to the next token.
     nextToken(): RawToken {
         const token = this.lookahead;
 
@@ -450,6 +451,7 @@ export class Parser {
         if (token.type !== Token.Punctuator || token.value !== value) {
             this.throwUnexpectedToken(token);
         }
+        return token.wsBefore;
     }
 
     // Quietly expect a comma when in tolerant mode, otherwise delegates to expect().
@@ -473,11 +475,12 @@ export class Parser {
     // Expect the next token to match the specified keyword.
     // If not, an exception will be thrown.
 
-    expectKeyword(keyword) {
+    expectKeyword(keyword): string {
         const token = this.nextToken();
         if (token.type !== Token.Keyword || token.value !== keyword) {
             this.throwUnexpectedToken(token);
         }
+        return token.wsBefore;
     }
 
     // Return true if the next token matches the specified punctuator.
@@ -713,16 +716,16 @@ export class Parser {
 
     parseSpreadElement(): Node.SpreadElement {
         const node = this.createNode();
-        this.expect('...');
+        var wsBefore = this.expect('...');
         const arg = this.inheritCoverGrammar(this.parseAssignmentExpression);
-        return this.finalize(node, new Node.SpreadElement(arg));
+        return this.finalize(node, new Node.SpreadElement(wsBefore, arg));
     }
 
     parseArrayInitializer(): Node.ArrayExpression {
         const node = this.createNode();
         const elements: Node.ArrayExpressionElement[] = [];
 
-        this.expect('[');
+        const wsBefore = this.expect('[');
         while (!this.match(']')) {
             if (this.match(',')) {
                 this.nextToken();
@@ -732,19 +735,20 @@ export class Parser {
                 if (!this.match(']')) {
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
-                    this.expect(',');
+                    element.wsAfter = this.expect(',');
                 }
                 elements.push(element);
             } else {
-                elements.push(this.inheritCoverGrammar(this.parseAssignmentExpression));
+                var arg = this.inheritCoverGrammar(this.parseAssignmentExpression);
+                elements.push(arg);
                 if (!this.match(']')) {
-                    this.expect(',');
+                  arg.wsAfter = this.expect(',');
                 }
             }
         }
-        this.expect(']');
+        const wsBeforeClosing = this.expect(']');
 
-        return this.finalize(node, new Node.ArrayExpression(elements));
+        return this.finalize(node, new Node.ArrayExpression(wsBefore, wsBeforeClosing, elements));
     }
 
     // https://tc39.github.io/ecma262/#sec-object-initializer
@@ -1441,8 +1445,9 @@ export class Parser {
             this.matchKeyword('delete') || this.matchKeyword('void') || this.matchKeyword('typeof')) {
             const node = this.startNode(this.lookahead);
             const token = this.nextToken();
+            const wsBeforeOp = token.wsBefore;
             expr = this.inheritCoverGrammar(this.parseUnaryExpression);
-            expr = this.finalize(node, new Node.UnaryExpression(token.value, expr));
+            expr = this.finalize(node, new Node.UnaryExpression(wsBeforeOp, token.value, expr));
             if (this.context.strict && expr.operator === 'delete' && expr.argument.type === Syntax.Identifier) {
                 this.tolerateError(Messages.StrictDelete);
             }
@@ -3557,7 +3562,7 @@ export class Parser {
         }
 
         const node = this.createNode();
-        this.expectKeyword('export');
+        const wsBeforeExport = this.expectKeyword('export');
 
         let exportDeclaration;
         if (this.matchKeyword('default')) {

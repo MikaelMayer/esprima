@@ -23,6 +23,7 @@ export class JSXElement {
     readonly openingElement: JSXOpeningElement;
     readonly children: JSXChild[];
     readonly closingElement: JSXClosingElement | null;
+    readonly unparseData: Node.UnparseArray;
     constructor(openingElement: JSXOpeningElement, children: JSXChild[], closingElement: JSXClosingElement | null) {
         this.type = JSXSyntax.JSXElement;
         this.openingElement = openingElement;
