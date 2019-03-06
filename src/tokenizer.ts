@@ -13,6 +13,7 @@ interface BufferEntry {
     };
     range?: [number, number];
     loc?: SourceLocation;
+    wsBefore?: string;
 }
 
 class Reader {
@@ -125,10 +126,12 @@ export class Tokenizer {
         return this.errorHandler.errors;
     }
 
-    getNextToken() {
+    getNextToken(): BufferEntry | undefined {
         if (this.buffer.length === 0) {
-
+            var wsStart = this.scanner.index;
             const comments: Comment[] = this.scanner.scanComments();
+            var tokenStart = this.scanner.index;
+            var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
             if (this.scanner.trackComment) {
                 for (let i = 0; i < comments.length; ++i) {
                     const e: Comment = comments[i];
@@ -160,24 +163,24 @@ export class Tokenizer {
                     };
                 }
 
-                const maybeRegex = (this.scanner.source[this.scanner.index] === '/') && this.reader.isRegexStart();
+                const maybeRegex = (this.scanner.source[tokenStart] === '/') && this.reader.isRegexStart();
                 let token: RawToken;
                 if (maybeRegex) {
                     const state = this.scanner.saveState();
                     try {
-                        token = this.scanner.scanRegExp();
+                        token = this.scanner.scanRegExp(ws);
                     } catch (e) {
                         this.scanner.restoreState(state);
-                        token = this.scanner.lex();
+                        token = this.scanner.lex(ws);
                     }
                 } else {
-                    token = this.scanner.lex();
+                    token = this.scanner.lex(ws);
                 }
-
                 this.reader.push(token);
                 const entry: BufferEntry = {
                     type: TokenName[token.type],
-                    value: this.scanner.source.slice(token.start, token.end)
+                    value: this.scanner.source.slice(token.start, token.end),
+                    wsBefore: ws,
                 };
                 if (this.trackRange) {
                     entry.range = [token.start, token.end];

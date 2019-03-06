@@ -25,6 +25,7 @@ interface RawJSXToken {
     lineStart: number;
     start: number;
     end: number;
+    wsBefore: string;
 }
 
 TokenName[JSXToken.Identifier] = 'JSXIdentifier';
@@ -161,7 +162,7 @@ export class JSXParser extends Parser {
 
     // Scan the next JSX token. This replaces Scanner#lex when in JSX mode.
 
-    lexJSX(): RawJSXToken {
+    lexJSX(wsBefore: string): RawJSXToken {
         const cp = this.scanner.source.charCodeAt(this.scanner.index);
 
         // < > / : = { }
@@ -173,7 +174,8 @@ export class JSXParser extends Parser {
                 lineNumber: this.scanner.lineNumber,
                 lineStart: this.scanner.lineStart,
                 start: this.scanner.index - 1,
-                end: this.scanner.index
+                end: this.scanner.index,
+                wsBefore: wsBefore
             };
         }
 
@@ -199,7 +201,8 @@ export class JSXParser extends Parser {
                 lineNumber: this.scanner.lineNumber,
                 lineStart: this.scanner.lineStart,
                 start: start,
-                end: this.scanner.index
+                end: this.scanner.index,
+                wsBefore: wsBefore
             };
         }
 
@@ -216,7 +219,8 @@ export class JSXParser extends Parser {
                 lineNumber: this.scanner.lineNumber,
                 lineStart: this.scanner.lineStart,
                 start: start,
-                end: this.scanner.index
+                end: this.scanner.index,
+                wsBefore: wsBefore
             };
         }
 
@@ -229,7 +233,8 @@ export class JSXParser extends Parser {
                 lineNumber: this.scanner.lineNumber,
                 lineStart: this.scanner.lineStart,
                 start: this.scanner.index,
-                end: this.scanner.index
+                end: this.scanner.index,
+                wsBefore: wsBefore
             };
         }
 
@@ -255,20 +260,25 @@ export class JSXParser extends Parser {
                 lineNumber: this.scanner.lineNumber,
                 lineStart: this.scanner.lineStart,
                 start: start,
-                end: this.scanner.index
+                end: this.scanner.index,
+                wsBefore: wsBefore
             };
         }
 
-        return this.scanner.lex() as RawJSXToken;
+        return this.scanner.lex(wsBefore) as RawJSXToken;
     }
 
     nextJSXToken(): RawJSXToken {
+        var wsStart = this.scanner.index;
         this.collectComments();
+        var tokenStart = this.scanner.index;
+        var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+        
 
         this.startMarker.index = this.scanner.index;
         this.startMarker.line = this.scanner.lineNumber;
         this.startMarker.column = this.scanner.index - this.scanner.lineStart;
-        const token = this.lexJSX();
+        const token = this.lexJSX(ws);
         this.lastMarker.index = this.scanner.index;
         this.lastMarker.line = this.scanner.lineNumber;
         this.lastMarker.column = this.scanner.index - this.scanner.lineStart;
@@ -314,7 +324,8 @@ export class JSXParser extends Parser {
             lineNumber: this.scanner.lineNumber,
             lineStart: this.scanner.lineStart,
             start: start,
-            end: this.scanner.index
+            end: this.scanner.index,
+            wsBefore: ""
         };
 
         if ((text.length > 0) && this.config.tokens) {
@@ -326,8 +337,11 @@ export class JSXParser extends Parser {
 
     peekJSXToken(): RawJSXToken {
         const state = this.scanner.saveState();
+        var wsStart = this.scanner.index;
         this.scanner.scanComments();
-        const next = this.lexJSX();
+        var tokenStart = this.scanner.index;
+        var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+        const next = this.lexJSX(ws);
         this.scanner.restoreState(state);
 
         return next;

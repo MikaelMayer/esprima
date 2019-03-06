@@ -32,6 +32,7 @@ export interface Comment {
 
 export interface RawToken {
     type: Token;
+    wsBefore: string,
     value: string | number;
     pattern?: string;
     flags?: string;
@@ -525,7 +526,7 @@ export class Scanner {
 
     // https://tc39.github.io/ecma262/#sec-names-and-keywords
 
-    private scanIdentifier(): RawToken {
+    private scanIdentifier(wsBefore: string): RawToken {
         let type: Token;
         const start = this.index;
 
@@ -559,13 +560,14 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore,
         };
     }
 
     // https://tc39.github.io/ecma262/#sec-punctuators
 
-    private scanPunctuator(): RawToken {
+    private scanPunctuator(wsBefore: string): RawToken {
         const start = this.index;
 
         // Check for most common single-character punctuators.
@@ -648,13 +650,14 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
     // https://tc39.github.io/ecma262/#sec-literals-numeric-literals
 
-    private scanHexLiteral(start: number): RawToken {
+    private scanHexLiteral(start: number, wsBefore: string): RawToken {
         let num = '';
 
         while (!this.eof()) {
@@ -678,11 +681,12 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
-    private scanBinaryLiteral(start: number): RawToken {
+    private scanBinaryLiteral(start: number, wsBefore: string): RawToken {
         let num = '';
         let ch;
 
@@ -713,11 +717,12 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
-    private scanOctalLiteral(prefix: string, start: number): RawToken {
+    private scanOctalLiteral(prefix: string, start: number, wsBefore: string): RawToken {
         let num = '';
         let octal = false;
 
@@ -751,7 +756,8 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
@@ -771,7 +777,7 @@ export class Scanner {
         return true;
     }
 
-    private scanNumericLiteral(): RawToken {
+    private scanNumericLiteral(wsBefore: string): RawToken {
         const start = this.index;
         let ch = this.source[start];
         assert(Character.isDecimalDigit(ch.charCodeAt(0)) || (ch === '.'),
@@ -789,19 +795,19 @@ export class Scanner {
             if (num === '0') {
                 if (ch === 'x' || ch === 'X') {
                     ++this.index;
-                    return this.scanHexLiteral(start);
+                    return this.scanHexLiteral(start, wsBefore);
                 }
                 if (ch === 'b' || ch === 'B') {
                     ++this.index;
-                    return this.scanBinaryLiteral(start);
+                    return this.scanBinaryLiteral(start, wsBefore);
                 }
                 if (ch === 'o' || ch === 'O') {
-                    return this.scanOctalLiteral(ch, start);
+                    return this.scanOctalLiteral(ch, start, wsBefore);
                 }
 
                 if (ch && Character.isOctalDigit(ch.charCodeAt(0))) {
                     if (this.isImplicitOctalLiteral()) {
-                        return this.scanOctalLiteral(ch, start);
+                        return this.scanOctalLiteral(ch, start, wsBefore);
                     }
                 }
             }
@@ -846,13 +852,14 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
     // https://tc39.github.io/ecma262/#sec-literals-string-literals
 
-    private scanStringLiteral(): RawToken {
+    private scanStringLiteral(wsBefore: string): RawToken {
         const start = this.index;
         let quote = this.source[start];
         assert((quote === '\'' || quote === '"'),
@@ -952,13 +959,14 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
     // https://tc39.github.io/ecma262/#sec-template-literal-lexical-components
 
-    private scanTemplate(): RawToken {
+    private scanTemplate(wsBefore: string): RawToken {
         let cooked = '';
         let terminated = false;
         const start = this.index;
@@ -1080,7 +1088,8 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
@@ -1222,7 +1231,7 @@ export class Scanner {
         return flags;
     }
 
-    public scanRegExp(): RawToken {
+    public scanRegExp(wsBefore: string): RawToken {
         const start = this.index;
 
         const pattern = this.scanRegExpBody();
@@ -1238,11 +1247,12 @@ export class Scanner {
             lineNumber: this.lineNumber,
             lineStart: this.lineStart,
             start: start,
-            end: this.index
+            end: this.index,
+            wsBefore: wsBefore
         };
     }
 
-    public lex(): RawToken {
+    public lex(wsBefore: string): RawToken {
         if (this.eof()) {
             return {
                 type: Token.EOF,
@@ -1250,53 +1260,54 @@ export class Scanner {
                 lineNumber: this.lineNumber,
                 lineStart: this.lineStart,
                 start: this.index,
-                end: this.index
+                end: this.index,
+                wsBefore: wsBefore
             };
         }
 
         const cp = this.source.charCodeAt(this.index);
 
         if (Character.isIdentifierStart(cp)) {
-            return this.scanIdentifier();
+            return this.scanIdentifier(wsBefore);
         }
 
         // Very common: ( and ) and ;
         if (cp === 0x28 || cp === 0x29 || cp === 0x3B) {
-            return this.scanPunctuator();
+            return this.scanPunctuator(wsBefore);
         }
 
         // String literal starts with single quote (U+0027) or double quote (U+0022).
         if (cp === 0x27 || cp === 0x22) {
-            return this.scanStringLiteral();
+            return this.scanStringLiteral(wsBefore);
         }
 
         // Dot (.) U+002E can also start a floating-point number, hence the need
         // to check the next character.
         if (cp === 0x2E) {
             if (Character.isDecimalDigit(this.source.charCodeAt(this.index + 1))) {
-                return this.scanNumericLiteral();
+                return this.scanNumericLiteral(wsBefore);
             }
-            return this.scanPunctuator();
+            return this.scanPunctuator(wsBefore);
         }
 
         if (Character.isDecimalDigit(cp)) {
-            return this.scanNumericLiteral();
+            return this.scanNumericLiteral(wsBefore);
         }
 
         // Template literals start with ` (U+0060) for template head
         // or } (U+007D) for template middle or template tail.
         if (cp === 0x60 || (cp === 0x7D && this.curlyStack[this.curlyStack.length - 1] === '${')) {
-            return this.scanTemplate();
+            return this.scanTemplate(wsBefore);
         }
 
         // Possible identifier start in a surrogate pair.
         if (cp >= 0xD800 && cp < 0xDFFF) {
             if (Character.isIdentifierStart(this.codePointAt(this.index))) {
-                return this.scanIdentifier();
+                return this.scanIdentifier(wsBefore);
             }
         }
 
-        return this.scanPunctuator();
+        return this.scanPunctuator(wsBefore);
     }
 
 }

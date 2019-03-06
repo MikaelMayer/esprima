@@ -58,6 +58,7 @@ interface TokenEntry {
     };
     range?: [number, number];
     loc?: SourceLocation;
+    wsBefore: string;
 }
 
 export class Parser {
@@ -130,7 +131,8 @@ export class Parser {
             lineNumber: this.scanner.lineNumber,
             lineStart: 0,
             start: 0,
-            end: 0
+            end: 0,
+            wsBefore: ""
         };
         this.hasLineTerminator = false;
 
@@ -295,7 +297,8 @@ export class Parser {
     convertToken(token: RawToken): TokenEntry {
         const t: TokenEntry = {
             type: TokenName[token.type],
-            value: this.getTokenRaw(token)
+            value: this.getTokenRaw(token),
+            wsBefore: token.wsBefore,
         };
         if (this.config.range) {
             t.range = [token.start, token.end];
@@ -327,8 +330,10 @@ export class Parser {
         this.lastMarker.index = this.scanner.index;
         this.lastMarker.line = this.scanner.lineNumber;
         this.lastMarker.column = this.scanner.index - this.scanner.lineStart;
-
+        var wsStart = this.scanner.index;
         this.collectComments();
+        var tokenStart = this.scanner.index;
+        var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
 
         if (this.scanner.index !== this.startMarker.index) {
             this.startMarker.index = this.scanner.index;
@@ -336,7 +341,7 @@ export class Parser {
             this.startMarker.column = this.scanner.index - this.scanner.lineStart;
         }
 
-        const next = this.scanner.lex();
+        const next = this.scanner.lex(ws);
         this.hasLineTerminator = (token.lineNumber !== next.lineNumber);
 
         if (next && this.context.strict && next.type === Token.Identifier) {
@@ -354,9 +359,12 @@ export class Parser {
     }
 
     nextRegexToken(): RawToken {
+        var wsStart = this.scanner.index;
         this.collectComments();
-
-        const token = this.scanner.scanRegExp();
+        var tokenStart = this.scanner.index;
+        var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+        
+        const token = this.scanner.scanRegExp(ws);
         if (this.config.tokens) {
             // Pop the previous token, '/' or '/='
             // This is added from the lookahead token.
@@ -1244,8 +1252,11 @@ export class Parser {
         let match = this.matchKeyword('import');
         if (match) {
             const state = this.scanner.saveState();
-            this.scanner.scanComments();
-            const next = this.scanner.lex();
+            var wsStart = this.scanner.index;
+            this.collectComments();
+            var tokenStart = this.scanner.index;
+            var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+            const next = this.scanner.lex(ws);
             this.scanner.restoreState(state);
             match = (next.type === Token.Punctuator) && (next.value === '(');
         }
@@ -1904,8 +1915,13 @@ export class Parser {
 
     isLexicalDeclaration(): boolean {
         const state = this.scanner.saveState();
-        this.scanner.scanComments();
-        const next = this.scanner.lex();
+        
+        var wsStart = this.scanner.index;
+        this.collectComments();
+        var tokenStart = this.scanner.index;
+        var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+        
+        const next = this.scanner.lex(ws);
         this.scanner.restoreState(state);
 
         return (next.type === Token.Identifier) ||
@@ -2889,8 +2905,11 @@ export class Parser {
         let match = this.matchContextualKeyword('async');
         if (match) {
             const state = this.scanner.saveState();
+            var wsStart = this.scanner.index;
             this.scanner.scanComments();
-            const next = this.scanner.lex();
+            var tokenStart = this.scanner.index;
+            var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+            const next = this.scanner.lex(ws);
             this.scanner.restoreState(state);
 
             match = (state.lineNumber === next.lineNumber) && (next.type === Token.Keyword) && (next.value === 'function');
