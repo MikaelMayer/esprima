@@ -41,7 +41,7 @@ var arrayUnparser = [
 
 /* tslint:disable:max-classes-per-file */
 /* type alias UnparseElement =
-     ({name: string, map?: (typeof this[name], { unparseData: UnparseElement[] } => UnparseElement ) => string} | string);
+     ({name: string, map?: (typeof this[name], { unparseData: UnparseElement[] } => string)  => UnparseElement} | string);
    type alias UnparseArray = UnparseElement[] */
 export class ArrayExpression {
     readonly type: string;
@@ -74,7 +74,8 @@ export class ArrayPattern {
 }
 
 const arrowUnparseData =  [
-  {name: "async", map: (async) => async ? "async " : ""},
+  {name: "async", map: (async) => async ? {name: "wsBeforeAsync"} : ""},
+  {name: "async", map: (async) => async ? "async" : ""},
   {name: "wsBefore"},
   {name: "params", map: multiChildMap() },
   {name: "wsBeforeArrow"},
@@ -102,18 +103,19 @@ export class ArrowFunctionExpression {
         this.generator = false;
         this.expression = expression;
         this.async = false;
+        this.wsBefore = wsBefore;
         this.wsBeforeArrow = wsBeforeArrow;
         this.arrow = arrow;
-        this.wsBefore = wsBefore;
         this.unparseData = arrowUnparseData;
     }
 }
 
 var binaryUnparseData = [
+  {name: "wsBefore"},
   {name: "left", map: singleChildMap},
-   {name: "wsBeforeOp"},
-   {name: "operator"},
-   {name: "right", map: singleChildMap}
+  {name: "wsBeforeOp"},
+  {name: "operator"},
+  {name: "right", map: singleChildMap}
 ]
 
 export class AssignmentExpression {
@@ -121,6 +123,7 @@ export class AssignmentExpression {
     readonly operator: string;
     readonly left: Expression;
     readonly right: Expression;
+    readonly wsBefore: string;
     readonly wsBeforeOp: string;
     readonly unparseData: UnparseArray; 
     constructor(wsBeforeOp: string, operator: string, left: Expression, right: Expression) {
@@ -128,20 +131,31 @@ export class AssignmentExpression {
         this.operator = operator;
         this.left = left;
         this.right = right;
+        this.wsBefore = "";
         this.wsBeforeOp = wsBeforeOp;
         this.unparseData = binaryUnparseData;
     }
 }
 
+var assignmentUnparseData = [
+  {name: "left", map: singleChildMap},
+  {name: "wsBeforeEq"},
+  "=",
+  {name: "right", map: singleChildMap}
+]
+
 export class AssignmentPattern {
     readonly type: string;
     readonly left: BindingIdentifier | BindingPattern;
     readonly right: Expression;
+    readonly wsBeforeEq: string;
     readonly unparseData: UnparseArray; 
-    constructor(left: BindingIdentifier | BindingPattern, right: Expression) {
+    constructor(left: BindingIdentifier | BindingPattern, wsBeforeEq: string, right: Expression) {
         this.type = Syntax.AssignmentPattern;
         this.left = left;
         this.right = right;
+        this.wsBeforeEq = wsBeforeEq;
+        this.unparseData = assignmentUnparseData;
     }
 }
 
@@ -153,8 +167,12 @@ export class AsyncArrowFunctionExpression {
     readonly generator: boolean;
     readonly expression: boolean;
     readonly async: boolean;
+    readonly wsBeforeAsync: string;
+    readonly wsBefore: string;
+    readonly wsBeforeArrow: string;
+    readonly arrow: string;
     readonly unparseData: UnparseArray; 
-    constructor(params: FunctionParameter[], body: BlockStatement | Expression, expression: boolean) {
+    constructor(wsBeforeAsync: string, wsBefore: string, params: FunctionParameter[], wsBeforeArrow: string, arrow: string, body: BlockStatement | Expression, expression: boolean) {
         this.type = Syntax.ArrowFunctionExpression;
         this.id = null;
         this.params = params;
@@ -162,8 +180,31 @@ export class AsyncArrowFunctionExpression {
         this.generator = false;
         this.expression = expression;
         this.async = true;
+        this.wsBefore = wsBefore;
+        this.wsBeforeArrow = wsBeforeArrow;
+        this.arrow = arrow;
+        this.wsBeforeAsync = wsBeforeAsync;
+        this.unparseData = arrowUnparseData;
     }
 }
+
+var functionDeclarationUnparseData = [
+  {name: "async", map: (async) => async ? {name: "wsBeforeAsync"} : ""},
+  {name: "async", map: (async) => async ? "async" : ""},
+  {name: "wsBefore"},
+  "function",
+  {name: "id", map: (id) => id ? {name: "wsBeforeId"} : ""},
+  {name: "id", map: (id) => id || ""},
+  {name: "generator", map: (g) => g ? {name: "wsBeforeStar"} : ""},
+  {name: "generator", map: (g) => g ? "*" : ""},
+  {name: "wsBeforeParams"},
+  "(",
+  {name: "params", map: multiChildMap(",")},
+  {name: "wsBeforeEndParams"},
+  ")",
+  {name: "wsBeforeBody"},
+  {name: "body"}
+]
 
 export class AsyncFunctionDeclaration {
     readonly type: string;
@@ -173,8 +214,15 @@ export class AsyncFunctionDeclaration {
     readonly generator: boolean;
     readonly expression: boolean;
     readonly async: boolean;
+    readonly wsBeforeAsync: string;
+    readonly wsBefore: string;
+    readonly wsBeforeId: string;
+    readonly wsBeforeStar: string;
+    readonly wsBeforeParams: string;
+    readonly wsBeforeEndParams: string;
+    readonly wsBeforeBody: string;
     readonly unparseData: UnparseArray; 
-    constructor(id: Identifier | null, params: FunctionParameter[], body: BlockStatement) {
+    constructor(wsBeforeAsync: string, wsBefore: string, wsBeforeId: string, id: Identifier | null, wsBeforeParams: string, params: FunctionParameter[], wsBeforeEndParams: string, wsBeforeBody: string, body: BlockStatement) {
         this.type = Syntax.FunctionDeclaration;
         this.id = id;
         this.params = params;
@@ -182,6 +230,14 @@ export class AsyncFunctionDeclaration {
         this.generator = false;
         this.expression = false;
         this.async = true;
+        this.wsBefore = wsBefore;
+        this.wsBeforeAsync = wsBeforeAsync;
+        this.wsBeforeId = wsBeforeId;
+        this.wsBeforeStar = "";
+        this.wsBeforeParams = wsBeforeParams;
+        this.wsBeforeEndParams = wsBeforeEndParams;
+        this.wsBeforeBody = wsBeforeBody;
+        this.unparseData = functionDeclarationUnparseData;
     }
 }
 
@@ -193,8 +249,15 @@ export class AsyncFunctionExpression {
     readonly generator: boolean;
     readonly expression: boolean;
     readonly async: boolean;
+    readonly wsBeforeAsync: string;
+    readonly wsBefore: string;
+    readonly wsBeforeId: string;
+    readonly wsBeforeStar: string;
+    readonly wsBeforeParams: string;
+    readonly wsBeforeEndParams: string;
+    readonly wsBeforeBody: string;
     readonly unparseData: UnparseArray; 
-    constructor(id: Identifier | null, params: FunctionParameter[], body: BlockStatement) {
+    constructor(wsBeforeAsync: string, wsBefore: string, wsBeforeId: string, id: Identifier | null, wsBeforeParams: string, params: FunctionParameter[], wsBeforeEndParams: string, wsBeforeBody: string, body: BlockStatement) {
         this.type = Syntax.FunctionExpression;
         this.id = id;
         this.params = params;
@@ -202,16 +265,33 @@ export class AsyncFunctionExpression {
         this.generator = false;
         this.expression = false;
         this.async = true;
+        this.wsBefore = wsBefore;
+        this.wsBeforeAsync = wsBeforeAsync;
+        this.wsBeforeId = wsBeforeId;
+        this.wsBeforeStar = "";
+        this.wsBeforeParams = wsBeforeParams;
+        this.wsBeforeEndParams = wsBeforeEndParams;
+        this.wsBeforeBody = wsBeforeBody;
+        this.unparseData = functionDeclarationUnparseData;
     }
 }
+
+var awaitUnparseData = [
+{name: "wsBefore"},
+"await",
+{name: "argument", map: singleChildMap}
+]
 
 export class AwaitExpression {
     readonly type: string;
     readonly argument: Expression;
+    readonly wsBefore: string;
     readonly unparseData: UnparseArray; 
-    constructor(argument: Expression) {
+    constructor(wsBefore: string, argument: Expression) {
         this.type = Syntax.AwaitExpression;
         this.argument = argument;
+        this.wsBefore = wsBefore;
+        this.unparseData = awaitUnparseData;
     }
 }
 
@@ -231,50 +311,105 @@ export class BinaryExpression {
         this.right = right;
         this.wsBefore = wsBefore;
         this.wsBeforeOp = wsBeforeOp;
+        this.unparseData = binaryUnparseData;
     }
 }
-
+var blockStatementUnparseData = [
+{name: "wsBefore"},
+  "{",
+    {name: "body", map: multiChildMap()},
+    {name: "wsBeforeEnd"},
+  "}"
+]
 export class BlockStatement {
     readonly type: string;
     readonly body: Statement[];
+    readonly wsBefore: string;
+    readonly wsBeforeEnd: string;
     readonly unparseData: UnparseArray; 
-    constructor(body) {
+    constructor(wsBefore: string, wsBeforeEnd: string, body: Statement[]) {
         this.type = Syntax.BlockStatement;
         this.body = body;
+        this.wsBefore = wsBefore;
+        this.wsBeforeEnd = wsBeforeEnd;
+        this.unparseData = blockStatementUnparseData;
     }
 }
-
+var breakStatementUnparseData = [
+  {name: "wsBefore"},
+  "break",
+  {name: "wsBeforeLabel"},
+  {name: "label", map: (label) => label || ""}
+]
 export class BreakStatement {
     readonly type: string;
     readonly label: Identifier | null;
+    readonly wsBefore: string;
+    readonly wsBeforeLabel: string;
     readonly unparseData: UnparseArray; 
-    constructor(label: Identifier | null) {
+    constructor(wsBefore: string, wsBeforeLabel: string, label: Identifier | null) {
         this.type = Syntax.BreakStatement;
         this.label = label;
+        this.wsBefore = wsBefore;
+        this.wsBeforeLabel = wsBeforeLabel;
+        this.unparseData = breakStatementUnparseData;
     }
 }
 
+var callUnparseData = [
+  {name: "wsBefore"},
+  {name: "callee", map: singleChildMap},
+  {name: "wsBeforeArgs"},
+    {name: "callee", map: (e => e.type == Syntax.Import ? "" : "(")},
+      {name: "arguments", map: multiChildMap(",")},
+      {name: "wsBeforeEndArgs"},
+    {name: "callee", map: (e => e.type == Syntax.Import ? "" : ")")},
+]
 export class CallExpression {
     readonly type: string;
     readonly callee: Expression | Import;
     readonly arguments: ArgumentListElement[];
+    readonly wsBefore: string;
+    readonly wsBeforeArgs: string;
+    readonly wsBeforeEndArgs: string;
     readonly unparseData: UnparseArray; 
-    constructor(callee: Expression | Import, args: ArgumentListElement[]) {
+    constructor(wsBefore: string, callee: Expression | Import, wsBeforeArgs: string, args: ArgumentListElement[], wsBeforeEndArgs: string) {
         this.type = Syntax.CallExpression;
         this.callee = callee;
         this.arguments = args;
+        this.wsBefore = wsBefore;
+        this.wsBeforeArgs = wsBeforeArgs;
+        this.wsBeforeEndArgs = wsBeforeEndArgs;
+        this.unparseData = callUnparseData;
     }
 }
 
+var catchUnparseData = [
+  {name: "wsBefore"},
+  "catch",
+  {name: "wsBeforeOpening"},
+  "(",
+  {name: "param", map: singleChildMap},
+  {name: "wsBeforeClosing"},
+  ")",
+  {name: "body", map: singleChildMap}
+]
 export class CatchClause {
     readonly type: string;
     readonly param: BindingIdentifier | BindingPattern;
     readonly body: BlockStatement;
+    readonly wsBefore: string;
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly unparseData: UnparseArray; 
-    constructor(param: BindingIdentifier | BindingPattern, body: BlockStatement) {
+    constructor(wsBefore: string, wsBeforeOpening: string, param: BindingIdentifier | BindingPattern, wsBeforeClosing: string, body: BlockStatement) {
         this.type = Syntax.CatchClause;
         this.param = param;
         this.body = body;
+        this.wsBefore = wsBefore;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
+        this.unparseData = catchUnparseData;
     }
 }
 
