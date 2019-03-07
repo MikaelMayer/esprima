@@ -335,23 +335,29 @@ export class BlockStatement {
         this.unparseData = blockStatementUnparseData;
     }
 }
-var breakStatementUnparseData = [
+
+var controlLabelStatementUnparseData = (name) => [
   {name: "wsBefore"},
-  "break",
+  name,
   {name: "wsBeforeLabel"},
-  {name: "label", map: (label) => label || ""}
-]
+  {name: "label", map: (label) => label || ""},
+  {name: "semicolon"}
+];
+var breakStatementUnparseData = controlLabelStatementUnparseData("break");
+
 export class BreakStatement {
     readonly type: string;
     readonly label: Identifier | null;
     readonly wsBefore: string;
     readonly wsBeforeLabel: string;
+    readonly semicolon: string;
     readonly unparseData: UnparseArray; 
-    constructor(wsBefore: string, wsBeforeLabel: string, label: Identifier | null) {
+    constructor(wsBefore: string, wsBeforeLabel: string, label: Identifier | null, semicolon: string) {
         this.type = Syntax.BreakStatement;
         this.label = label;
         this.wsBefore = wsBefore;
         this.wsBeforeLabel = wsBeforeLabel;
+        this.semicolon = semicolon;
         this.unparseData = breakStatementUnparseData;
     }
 }
@@ -412,7 +418,9 @@ export class CatchClause {
         this.unparseData = catchUnparseData;
     }
 }
-
+var classBodyUnparseData = [
+{name: "body", map: multiChildMap()}
+]
 export class ClassBody {
     readonly type: string;
     readonly body: Property[];
@@ -420,20 +428,50 @@ export class ClassBody {
     constructor(body: Property[]) {
         this.type = Syntax.ClassBody;
         this.body = body;
+        this.unparseData = classBodyUnparseData;
     }
 }
-
+var classUnparseData = [
+{name: "wsBefore"},
+"class",
+{name: "wsBeforeId"},
+{name: "id", map: (id) => id || ""},
+{name: "superClass", map:(s) => s ? {name: "wsBeforeExtends"} : ""},
+{name: "superClass", map:(s) => s ? "extends" : ""},
+{name: "superClass", map:(s) => s ? {name: "wsBeforeSuperclass"} : ""},
+{name: "superClass", map: singleChildMap},
+{name: "wsBeforeOpening"},
+"{",
+{name: "body", map: singleChildMap},
+{name: "wsBeforeClosing"},
+"}"
+]
 export class ClassDeclaration {
     readonly type: string;
     readonly id: Identifier | null;
     readonly superClass: Identifier | null;
     readonly body: ClassBody;
+    readonly wsBefore: string;
+    readonly wsBeforeId: string;
+    readonly wsBeforeExtends: string;
+    readonly wsBeforeSuperclass: string;
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly unparseData: UnparseArray; 
-    constructor(id: Identifier | null, superClass: Identifier | null, body: ClassBody) {
+    constructor(wsBefore: string, wsBeforeId: string, id: Identifier | null,
+                wsBeforeExtends: string, wsBeforeSuperclass: string, superClass: Identifier | null,
+                wsBeforeOpening; string, body: ClassBody, wsBeforeClosing: string) {
         this.type = Syntax.ClassDeclaration;
         this.id = id;
         this.superClass = superClass;
+        this.wsBefore = wsBefore;
+        this.wsBeforeId = wsBeforeId;
+        this.wsBeforeExtends = wsBeforeExtends;
+        this.wsBeforeSuperclass = wsBeforeSuperclass;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
         this.body = body;
+        this.unparseData = classUnparseData;
     }
 }
 
@@ -442,146 +480,297 @@ export class ClassExpression {
     readonly id: Identifier | null;
     readonly superClass: Identifier | null;
     readonly body: ClassBody;
+    readonly wsBefore: string;
+    readonly wsBeforeId: string;
+    readonly wsBeforeExtends: string;
+    readonly wsBeforeSuperclass: string;
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly unparseData: UnparseArray; 
-    constructor(id: Identifier | null, superClass: Identifier | null, body: ClassBody) {
+    readonly unparseData: UnparseArray; 
+    constructor(wsBefore: string, wsBeforeId: string, id: Identifier | null,
+                wsBeforeExtends: string, wsBeforeSuperclass: string, superClass: Identifier | null,
+                wsBeforeOpening; string, body: ClassBody, wsBeforeClosing: string) {
         this.type = Syntax.ClassExpression;
         this.id = id;
         this.superClass = superClass;
+        this.wsBefore = wsBefore;
+        this.wsBeforeId = wsBeforeId;
+        this.wsBeforeExtends = wsBeforeExtends;
+        this.wsBeforeSuperclass = wsBeforeSuperclass;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
         this.body = body;
+        this.unparseData = classUnparseData;
     }
 }
-
+var memberUnparseData = [
+{name: "object", map: singleChildMap},
+{name: "wsBeforeOpening"},
+{name: "computed", map: (c) => c ? "[" : "."},
+{name: "property", map: singleChildMap},
+{name: "wsBeforeClosing"},
+{name: "computed", map: (c) => c ? "]" : ""},
+"]",
+]
 export class ComputedMemberExpression {
     readonly type: string;
     readonly computed: boolean;
     readonly object: Expression;
     readonly property: Expression;
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly unparseData: UnparseArray; 
-    constructor(object: Expression, property: Expression) {
+    constructor(object: Expression, wsBeforeOpening: string, property: Expression, wsBeforeClosing: string) {
         this.type = Syntax.MemberExpression;
         this.computed = true;
         this.object = object;
         this.property = property;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
+        this.unparseData = memberUnparseData;
     }
 }
-
+var conditionalExpUnparseData = [
+  {name: "test", map: singleChildMap},
+  {name: "wsBeforeQues"},
+  "?",
+  {name: "consequent", map: singleChildMap},
+  {name: "wsBeforeColon"},
+  ":",
+  {name: "alternate", map: singleChildMap},
+]
 export class ConditionalExpression {
     readonly type: string;
     readonly test: Expression;
     readonly consequent: Expression;
     readonly alternate: Expression;
+    readonly wsBeforeQues: string;
+    readonly wsBeforeColon: string;
     readonly unparseData: UnparseArray; 
-    constructor(test: Expression, consequent: Expression, alternate: Expression) {
+    constructor(test: Expression, wsBeforeQues: string, consequent: Expression, wsBeforeColon: string, alternate: Expression) {
         this.type = Syntax.ConditionalExpression;
         this.test = test;
         this.consequent = consequent;
         this.alternate = alternate;
+        this.wsBeforeQues = wsBeforeQues;
+        this.wsBeforeColon = wsBeforeColon;
+        this.unparseData = conditionalExpUnparseData;
     }
 }
 
+var continueStatementUnparseData = controlLabelStatementUnparseData("continue");
 export class ContinueStatement {
     readonly type: string;
     readonly label: Identifier | null;
+    readonly wsBefore: string;
+    readonly wsBeforeLabel: string;
+    readonly semicolon: string;
     readonly unparseData: UnparseArray; 
-    constructor(label: Identifier | null) {
+    constructor(wsBefore: string, wsBeforeLabel: string, label: Identifier | null, semicolon: string) {
         this.type = Syntax.ContinueStatement;
         this.label = label;
+        this.wsBefore = wsBefore;
+        this.wsBeforeLabel = wsBeforeLabel;
+        this.semicolon = semicolon;
+        this.unparseData = continueStatementUnparseData;
     }
 }
-
+var debuggerUnparseData = [{name: "wsBefore"}, "debugger", {name: "semicolon"}];
 export class DebuggerStatement {
     readonly type: string;
+    readonly wsBefore: string,
     readonly unparseData: UnparseArray; 
-    constructor() {
+    readonly semicolon: string;
+    constructor(wsBefore: string, semicolon: string) {
         this.type = Syntax.DebuggerStatement;
+        this.wsBefore = wsBefore;
+        this.semicolon = semicolon;
+        this.unparseData = debuggerUnparseData;
     }
 }
-
+var directiveUnparseData = [{name: "expression"}, {name: "wsBeforeSemicolon"}, ";"];
 export class Directive {
     readonly type: string;
     readonly expression: Expression;
     readonly directive: string;
+    readonly wsBeforeSemicolon: string;
     readonly unparseData: UnparseArray; 
-    constructor(expression: Expression, directive: string) {
+    constructor(expression: Expression, directive: string, wsBeforeSemicolon: string) {
         this.type = Syntax.ExpressionStatement;
         this.expression = expression;
         this.directive = directive;
+        this.wsBeforeSemicolon = wsBeforeSemicolon;
+        this.unparseData = directiveUnparseData;
     }
 }
-
+var dowhileUnparseData = [
+{name: "wsBefore"},
+"do",
+{name: "body", map: singleChildMap},
+{name: "wsBeforeWhile"},
+"while",
+{name: "wsBeforeOpening"},
+"(",
+{name: "test", map: singleChildMap}
+{name: "wsBeforeClosing"},
+")"
+]
 export class DoWhileStatement {
     readonly type: string;
     readonly body: Statement;
     readonly test: Expression;
+    readonly wsBefore: UnparseArray; 
+    readonly wsBeforeWhile: UnparseArray; 
+    readonly wsBeforeOpening: UnparseArray;
+    readonly wsBeforeClosing: UnparseArray;
     readonly unparseData: UnparseArray; 
-    constructor(body: Statement, test: Expression) {
+    constructor(wsBefore: string, body: Statement, wsBeforeWhile: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string) {
         this.type = Syntax.DoWhileStatement;
         this.body = body;
         this.test = test;
+        this.wsBefore = wsBefore;
+        this.wsBeforeWhile = wsBeforeWhile;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
+        this.unparseData = dowhileUnparseData;
     }
 }
-
+var emptyUnparseData = [
+{name: "wsBefore"},
+";"]
 export class EmptyStatement {
     readonly type: string;
+    readonly wsBefore: string;
     readonly unparseData: UnparseArray; 
-    constructor() {
+    constructor(wsBefore: string) {
         this.type = Syntax.EmptyStatement;
+        this.wsBefore = wsBefore;
+        this.unparseData = emptyUnparseData;
     }
 }
-
+var exportAllUnparseData = [
+{name: "wsBefore"},
+"export"
+{name: "wsBeforeStar"},
+"*",
+{name: "wsBeforeFrom"},
+"from",
+{name: "source", map: singleChildMap}]
 export class ExportAllDeclaration {
     readonly type: string;
     readonly source: Literal;
+    readonly wsBefore: string;
+    readonly wsBeforeStar: string;
+    readonly wsBeforeFrom: string;
     readonly unparseData: UnparseArray; 
-    constructor(source: Literal) {
+    constructor(wsBefore: string, wsBeforeStar: string, wsBeforeFrom: wsBeforeFrom, source: Literal) {
         this.type = Syntax.ExportAllDeclaration;
+        this.wsBefore = wsBefore;
+        this.wsBeforeStar = wsBeforeStar;
+        this.wsBeforeFrom = wsBeforeFrom;
         this.source = source;
+        this.unparseData = exportAllUnparseData;
     }
 }
-
+var exportDefaultUnparseData = [
+{name: "wsBefore"},
+"export"
+{name: "wsBeforeDefault"},
+"default",
+{name: "declaration", map: singleChildMap}];
 export class ExportDefaultDeclaration {
     readonly type: string;
     readonly declaration: ExportableDefaultDeclaration;
     readonly unparseData: UnparseArray; 
-    constructor(declaration: ExportableDefaultDeclaration) {
+    constructor(wsBefore: string, wsBeforeDefault: string, declaration: ExportableDefaultDeclaration) {
         this.type = Syntax.ExportDefaultDeclaration;
         this.declaration = declaration;
+        this.wsBefore = wsBefore;
+        this.wsBeforeDefault = wsBeforeDefault;
+        this.unparseData = exportDefaultUnparseData;
     }
 }
-
+var exportNamedUnparseData = [
+{name: "wsBefore"},
+"export"
+{name: "declaration", map: (s) => s ? {name: "wsBeforeDeclaration"} : ""},
+{name: "declaration", singleChildMap},
+{name: "specifiers", map: (s) => s.length ? {name: "wsBeforeOpen"} : ""}, 
+{name: "specifiers", map: (s) => s.length ? "{" : ""}, 
+{name: "specifiers", map: (s) => s.length ? multiChildMap(",")(s) : ""},
+{name: "specifiers", map: (s) => s.length ? {name: "wsBeforeClose"} : ""}, 
+{name: "specifiers", map: (s) => s.length ? "}" : ""}, 
+{name: "source": map: (s) => s ? {name: "wsBeforeFrom"} : ""},
+{name: "source": map: (s) => s ? "from" : ""},
+{name: "source", map: singleChildMap}];
 export class ExportNamedDeclaration {
     readonly type: string;
     readonly declaration: ExportableNamedDeclaration | null;
     readonly specifiers: ExportSpecifier[];
     readonly source: Literal | null;
+    readonly wsBefore: string;
+    readonly wsBeforeDeclaration: string;
+    readonly wsBeforeOpen: string;
+    readonly wsBeforeClose: string;
+    readonly wsBeforeFrom: string;
     readonly unparseData: UnparseArray; 
-    constructor(declaration: ExportableNamedDeclaration | null, specifiers: ExportSpecifier[], source: Literal | null) {
+    constructor(wsBefore: string, wsBeforeDeclaration: string, declaration: ExportableNamedDeclaration | null,
+                wsBeforeOpen: string, specifiers: ExportSpecifier[], wsBeforeClose: string,
+                wsBeforeFrom: string, source: Literal | null) {
         this.type = Syntax.ExportNamedDeclaration;
         this.declaration = declaration;
         this.specifiers = specifiers;
         this.source = source;
+        this.wsBefore = wsBefore;
+        this.wsBeforeDeclaration = wsBeforeDeclaration;
+        this.wsBeforeOpen = wsBeforeOpen;
+        this.wsBeforeClose = wsBeforeClose;
+        this.wsBeforeFrom = wsBeforeFrom;
+        this.unparseData = exportNamedUnparseData;
     }
 }
-
+var exportSpecifierUnparseData = [
+{name: "wsBefore"},
+{name: "local"},
+{name: "same", map: (same) => same ? "" : {name: "wsBeforeAs"}},
+{name: "same", map: (same) => same ? "" : "as"},
+{name: "same", map: (same) => same ? "" : {name: "exported"}},
+{name: "wsAfter", map: (ws) => ws || ""},
+]
 export class ExportSpecifier {
     readonly type: string;
     readonly exported: Identifier;
     readonly local: Identifier;
-    readonly unparseData: UnparseArray; 
-    constructor(local: Identifier, exported: Identifier) {
+    readonly same: boolean;
+    readonly wsBefore: string;
+    readonly wsBeforeAs: string;
+    wsAfter?: string;
+    readonly unparseData: UnparseArray;
+    constructor(wsBefore: string, local: Identifier, wsBeforeAs: string, exported: Identifier) {
         this.type = Syntax.ExportSpecifier;
         this.exported = exported;
         this.local = local;
+        this.same = exported == local;
+        this.wsBefore = wsBefore;
+        this.wsBeforeAs = wsBeforeAs;
+        this.unparseData = exportSpecifierUnparseData;
     }
 }
-
+var expressionUnparseData = [
+{name: "expression", map: singleChildMap},
+{name: "semicolon"}
+]
 export class ExpressionStatement {
     readonly type: string;
     readonly expression: Expression;
-    readonly unparseData: UnparseArray; 
-    constructor(expression: Expression) {
+    readonly semicolon: string;
+    readonly unparseData: UnparseArray;
+    constructor(expression: Expression, semicolon: string) {
         this.type = Syntax.ExpressionStatement;
         this.expression = expression;
+        this.semicolon = semicolon;
+        this.unparseData = expressionUnparseData;
     }
 }
 
@@ -943,12 +1132,17 @@ export class StaticMemberExpression {
     readonly computed: boolean;
     readonly object: Expression;
     readonly property: Expression;
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly unparseData: UnparseArray; 
-    constructor(object: Expression, property: Expression) {
+    constructor(object: Expression, wsBeforeOpening: string, property: Expression) {
         this.type = Syntax.MemberExpression;
         this.computed = false;
         this.object = object;
         this.property = property;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = "";
+        this.unparseData = memberUnparseData;
     }
 }
 

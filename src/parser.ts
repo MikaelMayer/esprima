@@ -597,7 +597,8 @@ export class Parser {
 
     consumeSemicolon() {
         if (this.match(';')) {
-            this.nextToken();
+            var token = this.nextToken();
+            return token.wsBefore + ";";
         } else if (!this.hasLineTerminator) {
             if (this.lookahead.type !== Token.EOF && !this.match('}')) {
                 this.throwUnexpectedToken(this.lookahead);
@@ -605,7 +606,9 @@ export class Parser {
             this.lastMarker.index = this.startMarker.index;
             this.lastMarker.line = this.startMarker.line;
             this.lastMarker.column = this.startMarker.column;
+            return "";
         }
+        return "";
     }
 
     // https://tc39.github.io/ecma262/#sec-primary-expression
@@ -1942,9 +1945,9 @@ export class Parser {
         assert(kind === 'let' || kind === 'const', 'Lexical declaration must be either let or const');
 
         const declarations = this.parseBindingList(kind, options);
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.VariableDeclaration(declarations, kind));
+        return this.finalize(node, new Node.VariableDeclaration(declarations, kind, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-destructuring-binding-patterns
@@ -2153,9 +2156,9 @@ export class Parser {
         const node = this.createNode();
         this.expectKeyword('var');
         const declarations = this.parseVariableDeclarationList({ inFor: false });
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.VariableDeclaration(declarations, 'var'));
+        return this.finalize(node, new Node.VariableDeclaration(declarations, 'var', semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-empty-statement
@@ -2171,8 +2174,8 @@ export class Parser {
     parseExpressionStatement(): Node.ExpressionStatement {
         const node = this.createNode();
         const expr = this.parseExpression();
-        this.consumeSemicolon();
-        return this.finalize(node, new Node.ExpressionStatement(expr));
+        const semicolon = this.consumeSemicolon();
+        return this.finalize(node, new Node.ExpressionStatement(expr, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-if-statement
@@ -2337,8 +2340,8 @@ export class Parser {
                         init = null;
                         forIn = false;
                     } else {
-                        this.consumeSemicolon();
-                        init = this.finalize(init, new Node.VariableDeclaration(declarations, kind));
+                        const semicolon = this.consumeSemicolon();
+                        init = this.finalize(init, new Node.VariableDeclaration(declarations, kind, semicolon));
                     }
                 }
             } else {
@@ -2429,12 +2432,12 @@ export class Parser {
             }
         }
 
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
         if (label === null && !this.context.inIteration) {
             this.throwError(Messages.IllegalContinue);
         }
 
-        return this.finalize(node, new Node.ContinueStatement(label));
+        return this.finalize(node, new Node.ContinueStatement(label, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-break-statement
@@ -2454,12 +2457,12 @@ export class Parser {
             label = id;
         }
 
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
         if (label === null && !this.context.inIteration && !this.context.inSwitch) {
             this.throwError(Messages.IllegalBreak);
         }
 
-        return this.finalize(node, new Node.BreakStatement(label));
+        return this.finalize(node, new Node.BreakStatement(label, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-return-statement
@@ -2478,9 +2481,9 @@ export class Parser {
             this.lookahead.type === Token.Template;
 
         const argument = hasArgument ? this.parseExpression() : null;
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.ReturnStatement(argument));
+        return this.finalize(node, new Node.ReturnStatement(argument, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-with-statement
@@ -2605,8 +2608,8 @@ export class Parser {
 
             statement = new Node.LabeledStatement(id, body);
         } else {
-            this.consumeSemicolon();
-            statement = new Node.ExpressionStatement(expr);
+            const semicolon = this.consumeSemicolon();
+            statement = new Node.ExpressionStatement(expr, semicolon);
         }
 
         return this.finalize(node, statement);
@@ -2623,9 +2626,9 @@ export class Parser {
         }
 
         const argument = this.parseExpression();
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.ThrowStatement(argument));
+        return this.finalize(node, new Node.ThrowStatement(argument, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-try-statement
@@ -2688,8 +2691,8 @@ export class Parser {
     parseDebuggerStatement(): Node.DebuggerStatement {
         const node = this.createNode();
         this.expectKeyword('debugger');
-        this.consumeSemicolon();
-        return this.finalize(node, new Node.DebuggerStatement());
+        const semicolon = this.consumeSemicolon();
+        return this.finalize(node, new Node.DebuggerStatement(semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-ecmascript-language-statements-and-declarations
@@ -3070,9 +3073,9 @@ export class Parser {
         const node = this.createNode();
         const expr = this.parseExpression();
         const directive = (expr.type === Syntax.Literal) ? this.getTokenRaw(token).slice(1, -1) : null;
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, directive ? new Node.Directive(expr, directive) : new Node.ExpressionStatement(expr));
+        return this.finalize(node, directive ? new Node.Directive(expr, directive, semicolon) : new Node.ExpressionStatement(expr, semicolon));
     }
 
     parseDirectivePrologues(): Node.Statement[] {
@@ -3536,9 +3539,9 @@ export class Parser {
             this.nextToken();
             src = this.parseModuleSpecifier();
         }
-        this.consumeSemicolon();
+        const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.ImportDeclaration(specifiers, src));
+        return this.finalize(node, new Node.ImportDeclaration(specifiers, src, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-exports
@@ -3592,8 +3595,8 @@ export class Parser {
                 // export default (1 + 2);
                 const declaration = this.match('{') ? this.parseObjectInitializer() :
                     this.match('[') ? this.parseArrayInitializer() : this.parseAssignmentExpression();
-                this.consumeSemicolon();
-                exportDeclaration = this.finalize(node, new Node.ExportDefaultDeclaration(declaration));
+                const semicolon = this.consumeSemicolon();
+                exportDeclaration = this.finalize(node, new Node.ExportDefaultDeclaration(declaration, semicolon));
             }
 
         } else if (this.match('*')) {
@@ -3605,8 +3608,8 @@ export class Parser {
             }
             this.nextToken();
             const src = this.parseModuleSpecifier();
-            this.consumeSemicolon();
-            exportDeclaration = this.finalize(node, new Node.ExportAllDeclaration(src));
+            const semicolon = this.consumeSemicolon();
+            exportDeclaration = this.finalize(node, new Node.ExportAllDeclaration(src, semicolon));
 
         } else if (this.lookahead.type === Token.Keyword) {
             // export var f = 1;
@@ -3644,22 +3647,22 @@ export class Parser {
                 }
             }
             this.expect('}');
-
+            var semicolon = "";
             if (this.matchContextualKeyword('from')) {
                 // export {default} from 'foo';
                 // export {foo} from 'foo';
                 this.nextToken();
                 source = this.parseModuleSpecifier();
-                this.consumeSemicolon();
+                semicolon = this.consumeSemicolon();
             } else if (isExportFromIdentifier) {
                 // export {default}; // missing fromClause
                 const message = this.lookahead.value ? Messages.UnexpectedToken : Messages.MissingFromClause;
                 this.throwError(message, this.lookahead.value);
             } else {
                 // export {foo};
-                this.consumeSemicolon();
+                semicolon = this.consumeSemicolon();
             }
-            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(null, specifiers, source));
+            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(null, specifiers, source, semicolon));
         }
 
         return exportDeclaration;
