@@ -3303,7 +3303,7 @@ export class Parser {
             method = true;
         }
 
-        if (!kind) {
+        if (!kind || !key) { // || !key is not mandatory because !kinds implies !key
             this.throwUnexpectedToken(this.lookahead);
         }
 
