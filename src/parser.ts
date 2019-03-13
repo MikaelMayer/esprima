@@ -460,12 +460,14 @@ export class Parser {
         if (this.config.tolerant) {
             const token = this.lookahead;
             if (token.type === Token.Punctuator && token.value === ',') {
-                this.nextToken();
+                return this.nextToken().wsBefore;
             } else if (token.type === Token.Punctuator && token.value === ';') {
-                this.nextToken();
+                var wsBefore = this.nextToken().wsBefore;
                 this.tolerateUnexpectedToken(token);
+                return wsBefore;
             } else {
                 this.tolerateUnexpectedToken(token, Messages.UnexpectedToken);
+                return "";
             }
         } else {
             this.expect(',');
@@ -656,7 +658,7 @@ export class Parser {
                 break;
 
             case Token.Template:
-                expr = this.parseTemplateLiteral();
+                expr = this.parseTemplateLiteral(this.lookahead.wsBefore);
                 break;
 
             case Token.Punctuator:
@@ -861,6 +863,7 @@ export class Parser {
         let isAsync = false;
         var wsBeforeAsync = "";
         var wsBeforeStar = "";
+        var wsBeforeColon = "";
 
         if (token.type === Token.Identifier) {
             const id = token.value;
@@ -905,6 +908,8 @@ export class Parser {
 
             kind = 'init';
             if (this.match(':') && !isAsync) {
+                wsBeforeColon = this.lookahead.wsBefore;
+
                 if (!computed && this.isPropertyKey(key, '__proto__')) {
                     if (hasProto.value) {
                         this.tolerateError(Messages.DuplicateProtoProperty);
@@ -935,13 +940,13 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.Property(kind, key as Node.PropertyKey, computed, value, method, shorthand));
+        return this.finalize(node, new Node.Property(kind, key as Node.PropertyKey, wsBeforeColon, computed, value, method, shorthand));
     }
 
     parseObjectInitializer(): Node.ObjectExpression {
         const node = this.createNode();
 
-        this.expect('{');
+        var wsBefore = this.expect('{');
         const properties: Node.ObjectExpressionProperty[] = [];
         const hasProto = { value: false };
         while (!this.match('}')) {
@@ -950,9 +955,9 @@ export class Parser {
                 this.expectCommaSeparator();
             }
         }
-        this.expect('}');
+        var wsBeforeClosing = this.expect('}');
 
-        return this.finalize(node, new Node.ObjectExpression(properties));
+        return this.finalize(node, new Node.ObjectExpression(wsBefore, properties, wsBeforeClosing));
     }
 
     // https://tc39.github.io/ecma262/#sec-template-literals
@@ -981,7 +986,7 @@ export class Parser {
         return this.finalize(node, new Node.TemplateElement({ raw, cooked }, token.tail as boolean));
     }
 
-    parseTemplateLiteral(): Node.TemplateLiteral {
+    parseTemplateLiteral(wsBefore: string): Node.TemplateLiteral {
         const node = this.createNode();
 
         const expressions: Node.Expression[] = [];
@@ -995,7 +1000,7 @@ export class Parser {
             quasis.push(quasi);
         }
 
-        return this.finalize(node, new Node.TemplateLiteral(quasis, expressions));
+        return this.finalize(node, new Node.TemplateLiteral(wsBefore, quasis, expressions));
     }
 
     // https://tc39.github.io/ecma262/#sec-grouping-operator
@@ -1040,30 +1045,39 @@ export class Parser {
     parseGroupExpression(): ArrowParameterPlaceHolderNode | Node.Expression {
         let expr;
 
-        this.expect('(');
+        var wsBeforeOpening = this.expect('(');
+        var wsBeforeClosing = "";
+        var wsBeforeArrow = "";
+        var finalcolon = false;
         if (this.match(')')) {
-            this.nextToken();
+            wsBeforeClosing = this.nextToken().wsBefore;
             if (!this.match('=>')) {
-                this.expect('=>');
+                wsBeforeArrow = this.expect('=>');
             }
             expr = {
                 type: ArrowParameterPlaceHolder,
                 params: [],
-                async: false
+                async: false,
+                wsBeforeOpening: wsBeforeOpening,
+                wsBeforeClosing: wsBeforeClosing,
+                wsBeforeArrow: wsBeforeArrow
             };
         } else {
             const startToken = this.lookahead;
             const params = [];
             if (this.match('...')) {
                 expr = this.parseRestElement(params);
-                this.expect(')');
+                wsBeforeClosing = this.expect(')');
                 if (!this.match('=>')) {
-                    this.expect('=>');
+                    wsBeforeArrow = this.expect('=>');
                 }
                 expr = {
                     type: ArrowParameterPlaceHolder,
                     params: [expr],
-                    async: false
+                    async: false,
+                    wsBeforeOpening: wsBeforeOpening,
+                    wsBeforeClosing: wsBeforeClosing,
+                    wsBeforeArrow: wsBeforeArrow
                 };
             } else {
                 let arrow = false;
@@ -1079,9 +1093,11 @@ export class Parser {
                         if (!this.match(',')) {
                             break;
                         }
-                        this.nextToken();
-                        if (this.match(')')) {
-                            this.nextToken();
+                        var wsAfter = this.nextToken().wsBefore;
+                        expressions[expressions.length - 1].wsAfter = wsAfter;
+                        if (this.match(')')) { // Parenthesis following a comma indicates a parameter list.
+                            wsBeforeClosing = this.nextToken();
+                            finalcolon = true;
                             for (let i = 0; i < expressions.length; i++) {
                                 this.reinterpretExpressionAsPattern(expressions[i]);
                             }
@@ -1089,16 +1105,19 @@ export class Parser {
                             expr = {
                                 type: ArrowParameterPlaceHolder,
                                 params: expressions,
-                                async: false
+                                async: false,
+                                wsBeforeOpening: wsBeforeOpening,
+                                wsBeforeClosing: wsBeforeClosing,
+                                wsBeforeArrow: wsBeforeArrow
                             };
-                        } else if (this.match('...')) {
+                        } else if (this.match('...')) { // spread indicates a parameter list
                             if (!this.context.isBindingElement) {
                                 this.throwUnexpectedToken(this.lookahead);
                             }
                             expressions.push(this.parseRestElement(params));
-                            this.expect(')');
+                            wsBeforeClosing = this.expect(')');
                             if (!this.match('=>')) {
-                                this.expect('=>');
+                                wsBeforeArrow = this.expect('=>');
                             }
                             this.context.isBindingElement = false;
                             for (let i = 0; i < expressions.length; i++) {
@@ -1108,7 +1127,10 @@ export class Parser {
                             expr = {
                                 type: ArrowParameterPlaceHolder,
                                 params: expressions,
-                                async: false
+                                async: false,
+                                wsBeforeOpening: wsBeforeOpening,
+                                wsBeforeClosing: wsBeforeClosing,
+                                wsBeforeArrow: wsBeforeArrow
                             };
                         } else {
                             expressions.push(this.inheritCoverGrammar(this.parseAssignmentExpression));
@@ -1118,7 +1140,7 @@ export class Parser {
                         }
                     }
                     if (!arrow) {
-                        expr = this.finalize(this.startNode(startToken), new Node.SequenceExpression(expressions));
+                        expr = this.finalize(this.startNode(startToken), new Node.SequenceExpression(wsBeforeOpening, expressions, finalcolon, wsBeforeClosing));
                     }
                 }
 
@@ -1164,8 +1186,8 @@ export class Parser {
 
     // https://tc39.github.io/ecma262/#sec-left-hand-side-expressions
 
-    parseArguments(): Node.ArgumentListElement[] {
-        this.expect('(');
+    parseArguments(): {wsBeforeOpening: string, args: Node.ArgumentListElement[], wsBeforeClosing: string} {
+        var wsBeforeOpening = this.expect('(');
         const args: Node.ArgumentListElement[] = [];
         if (!this.match(')')) {
             while (true) {
@@ -1181,9 +1203,9 @@ export class Parser {
                 }
             }
         }
-        this.expect(')');
+        var wsBeforeClosing = this.expect(')');
 
-        return args;
+        return {wsBeforeOpening:wsBeforeOpening, args:args, wsBeforeClosing:wsBeforeClosing};
     }
 
     isIdentifierName(token): boolean {
@@ -1199,7 +1221,7 @@ export class Parser {
         if (!this.isIdentifierName(token)) {
             this.throwUnexpectedToken(token);
         }
-        return this.finalize(node, new Node.Identifier(token.value));
+        return this.finalize(node, new Node.Identifier(token.wsBefore, token.value));
     }
 
     parseNewExpression(): Node.MetaProperty | Node.NewExpression {
@@ -1210,10 +1232,10 @@ export class Parser {
 
         let expr;
         if (this.match('.')) {
-            this.nextToken();
+            var wsBeforeDot = this.nextToken().wsBefore;
             if (this.lookahead.type === Token.Identifier && this.context.inFunctionBody && this.lookahead.value === 'target') {
                 const property = this.parseIdentifierName();
-                expr = new Node.MetaProperty(id, property);
+                expr = new Node.MetaProperty(id, wsBeforeDot, property);
             } else {
                 this.throwUnexpectedToken(this.lookahead);
             }
@@ -1221,8 +1243,8 @@ export class Parser {
             this.throwUnexpectedToken(this.lookahead);
         } else {
             const callee = this.isolateCoverGrammar(this.parseLeftHandSideExpression);
-            const args = this.match('(') ? this.parseArguments() : [];
-            expr = new Node.NewExpression(callee, args);
+            const args = this.match('(') ? this.parseArguments() : {wsBeforeOpening: "", args: [], wsBeforeClosing: ""};
+            expr = new Node.NewExpression(id.wsBefore, callee, args.wsBeforeOpening, args.args, args.wsBeforeClosing);
             this.context.isAssignmentTarget = false;
             this.context.isBindingElement = false;
         }
@@ -1236,8 +1258,8 @@ export class Parser {
         return arg;
     }
 
-    parseAsyncArguments(): Node.ArgumentListElement[] {
-        this.expect('(');
+    parseAsyncArguments(): {wsBeforeOpening: string, args: Node.ArgumentListElement[], wsBeforeClosing: string} {
+        var wsBeforeOpening = this.expect('(');
         const args: Node.ArgumentListElement[] = [];
         if (!this.match(')')) {
             while (true) {
@@ -1253,9 +1275,11 @@ export class Parser {
                 }
             }
         }
-        this.expect(')');
+        var wsBeforeClosing = this.expect(')');
 
-        return args;
+        return {wsBeforeOpening: wsBeforeOpening,
+                args: args,
+                wsBeforeClosing: wsBeforeClosing};
     }
 
     matchImportCall(): boolean {
@@ -1276,8 +1300,8 @@ export class Parser {
 
     parseImportCall(): Node.Import {
         const node = this.createNode();
-        this.expectKeyword('import');
-        return this.finalize(node, new Node.Import());
+        const wsBefore = this.expectKeyword('import');
+        return this.finalize(node, new Node.Import(wsBefore));
     }
 
     parseLeftHandSideExpressionAllowCall(): Node.Expression {
@@ -1289,9 +1313,9 @@ export class Parser {
 
         let expr;
         if (this.matchKeyword('super') && this.context.inFunctionBody) {
-            expr = this.createNode();
-            this.nextToken();
-            expr = this.finalize(expr, new Node.Super());
+            const node = this.createNode();
+            const wsBefore = this.nextToken().wsBefore;
+            expr = this.finalize(node, new Node.Super(wsBefore));
             if (!this.match('(') && !this.match('.') && !this.match('[')) {
                 this.throwUnexpectedToken(this.lookahead);
             }
@@ -1303,39 +1327,39 @@ export class Parser {
             if (this.match('.')) {
                 this.context.isBindingElement = false;
                 this.context.isAssignmentTarget = true;
-                this.expect('.');
+                var wsBeforeDot = this.expect('.');
                 const property = this.parseIdentifierName();
-                expr = this.finalize(this.startNode(startToken), new Node.StaticMemberExpression(expr, property));
+                expr = this.finalize(this.startNode(startToken), new Node.StaticMemberExpression(expr, wsBeforeDot, property));
 
             } else if (this.match('(')) {
                 const asyncArrow = maybeAsync && (startToken.lineNumber === this.lookahead.lineNumber);
                 this.context.isBindingElement = false;
                 this.context.isAssignmentTarget = false;
                 const args = asyncArrow ? this.parseAsyncArguments() : this.parseArguments();
-                if (expr.type === Syntax.Import && args.length !== 1) {
+                if (expr.type === Syntax.Import && args.args.length !== 1) {
                     this.tolerateError(Messages.BadImportCallArity);
                 }
-                expr = this.finalize(this.startNode(startToken), new Node.CallExpression(expr, args));
+                expr = this.finalize(this.startNode(startToken), new Node.CallExpression(expr, args.wsBeforeOpening, args.args, args.wsBeforeClosing));
                 if (asyncArrow && this.match('=>')) {
-                    for (let i = 0; i < args.length; ++i) {
-                        this.reinterpretExpressionAsPattern(args[i]);
+                    for (let i = 0; i < args.args.length; ++i) {
+                        this.reinterpretExpressionAsPattern(args.args[i]);
                     }
                     expr = {
                         type: ArrowParameterPlaceHolder,
-                        params: args,
+                        params: args.args,
                         async: true
                     };
                 }
             } else if (this.match('[')) {
                 this.context.isBindingElement = false;
                 this.context.isAssignmentTarget = true;
-                this.expect('[');
+                var wsBeforeOpening = this.expect('[');
                 const property = this.isolateCoverGrammar(this.parseExpression);
-                this.expect(']');
-                expr = this.finalize(this.startNode(startToken), new Node.ComputedMemberExpression(expr, property));
+                var wsBeforeClosing = this.expect(']');
+                expr = this.finalize(this.startNode(startToken), new Node.ComputedMemberExpression(expr, wsBeforeOpening, property, wsBeforeClosing));
 
             } else if (this.lookahead.type === Token.Template && this.lookahead.head) {
-                const quasi = this.parseTemplateLiteral();
+                const quasi = this.parseTemplateLiteral(this.lookahead.wsBefore);
                 expr = this.finalize(this.startNode(startToken), new Node.TaggedTemplateExpression(expr, quasi));
 
             } else {
@@ -1350,12 +1374,12 @@ export class Parser {
     parseSuper(): Node.Super {
         const node = this.createNode();
 
-        this.expectKeyword('super');
+        const wsBefore = this.expectKeyword('super');
         if (!this.match('[') && !this.match('.')) {
             this.throwUnexpectedToken(this.lookahead);
         }
 
-        return this.finalize(node, new Node.Super());
+        return this.finalize(node, new Node.Super(wsBefore));
     }
 
     parseLeftHandSideExpression(): Node.Expression {
@@ -1369,20 +1393,20 @@ export class Parser {
             if (this.match('[')) {
                 this.context.isBindingElement = false;
                 this.context.isAssignmentTarget = true;
-                this.expect('[');
+                var wsBeforeOpening = this.expect('[');
                 const property = this.isolateCoverGrammar(this.parseExpression);
-                this.expect(']');
-                expr = this.finalize(node, new Node.ComputedMemberExpression(expr, property));
+                var wsBeforeClosing = this.expect(']');
+                expr = this.finalize(node, new Node.ComputedMemberExpression(expr, wsBeforeOpening, property, wsBeforeClosing));
 
             } else if (this.match('.')) {
                 this.context.isBindingElement = false;
                 this.context.isAssignmentTarget = true;
-                this.expect('.');
+                var wsBeforeColon = this.expect('.');
                 const property = this.parseIdentifierName();
-                expr = this.finalize(node, new Node.StaticMemberExpression(expr, property));
+                expr = this.finalize(node, new Node.StaticMemberExpression(expr, wsBeforeColon, property));
 
             } else if (this.lookahead.type === Token.Template && this.lookahead.head) {
-                const quasi = this.parseTemplateLiteral();
+                const quasi = this.parseTemplateLiteral(this.lookahead.wsBefore);
                 expr = this.finalize(node, new Node.TaggedTemplateExpression(expr, quasi));
 
             } else {
@@ -1410,7 +1434,7 @@ export class Parser {
                 this.tolerateError(Messages.InvalidLHSInAssignment);
             }
             const prefix = true;
-            expr = this.finalize(node, new Node.UpdateExpression(token.value, expr, prefix));
+            expr = this.finalize(node, new Node.UpdateExpression(token.wsBefore, token.value, expr, prefix));
             this.context.isAssignmentTarget = false;
             this.context.isBindingElement = false;
         } else {
@@ -1425,9 +1449,10 @@ export class Parser {
                     }
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
-                    const operator = this.nextToken().value;
+                    const operatorToken = this.nextToken();
+                    const operator = operatorToken.value;
                     const prefix = false;
-                    expr = this.finalize(this.startNode(startToken), new Node.UpdateExpression(operator, expr, prefix));
+                    expr = this.finalize(this.startNode(startToken), new Node.UpdateExpression(operatorToken.wsBefore, operator, expr, prefix));
                 }
             }
         }
@@ -1439,9 +1464,9 @@ export class Parser {
 
     parseAwaitExpression(): Node.AwaitExpression {
         const node = this.createNode();
-        this.nextToken();
+        var wsBefore = this.nextToken().wsBefore;
         const argument = this.parseUnaryExpression();
-        return this.finalize(node, new Node.AwaitExpression(argument));
+        return this.finalize(node, new Node.AwaitExpression(wsBefore, argument));
     }
 
     parseUnaryExpression(): Node.Expression {
@@ -1473,12 +1498,12 @@ export class Parser {
 
         let expr = this.inheritCoverGrammar(this.parseUnaryExpression);
         if (expr.type !== Syntax.UnaryExpression && this.match('**')) {
-            this.nextToken();
+            var wsBeforeOp = this.nextToken().wsBefore;
             this.context.isAssignmentTarget = false;
             this.context.isBindingElement = false;
             const left = expr;
             const right = this.isolateCoverGrammar(this.parseExponentiationExpression);
-            expr = this.finalize(this.startNode(startToken), new Node.BinaryExpression('**', left, right));
+            expr = this.finalize(this.startNode(startToken), new Node.BinaryExpression('**', left, right, "", wsBeforeOp));
         }
 
         return expr;
@@ -1523,7 +1548,7 @@ export class Parser {
             let left = expr;
             let right = this.isolateCoverGrammar(this.parseExponentiationExpression);
 
-            const stack = [left, token.value, right];
+            const stack = [left, token, right];
             const precedences: number[] = [prec];
             while (true) {
                 prec = this.binaryPrecedence(this.lookahead);
@@ -1539,11 +1564,11 @@ export class Parser {
                     left = stack.pop();
                     markers.pop();
                     const node = this.startNode(markers[markers.length - 1]);
-                    stack.push(this.finalize(node, new Node.BinaryExpression(operator, left, right)));
+                    stack.push(this.finalize(node, new Node.BinaryExpression(operator.value, left, right, "", operator.wsBefore)));
                 }
 
                 // Shift.
-                stack.push(this.nextToken().value);
+                stack.push(this.nextToken());
                 precedences.push(prec);
                 markers.push(this.lookahead);
                 stack.push(this.isolateCoverGrammar(this.parseExponentiationExpression));
@@ -1559,7 +1584,7 @@ export class Parser {
                 const lastLineStart = lastMarker && lastMarker.lineStart;
                 const node = this.startNode(marker, lastLineStart);
                 const operator = stack[i - 1];
-                expr = this.finalize(node, new Node.BinaryExpression(operator, stack[i - 2], expr));
+                expr = this.finalize(node, new Node.BinaryExpression(operator.value, stack[i - 2], expr, "", operator.wsBefore));
                 i -= 2;
                 lastMarker = marker;
             }
@@ -1575,17 +1600,17 @@ export class Parser {
 
         let expr = this.inheritCoverGrammar(this.parseBinaryExpression);
         if (this.match('?')) {
-            this.nextToken();
+            var wsBeforeQuestion = this.nextToken().wsBefore;
 
             const previousAllowIn = this.context.allowIn;
             this.context.allowIn = true;
             const consequent = this.isolateCoverGrammar(this.parseAssignmentExpression);
             this.context.allowIn = previousAllowIn;
 
-            this.expect(':');
+            var wsBeforeColon = this.expect(':');
             const alternate = this.isolateCoverGrammar(this.parseAssignmentExpression);
 
-            expr = this.finalize(this.startNode(startToken), new Node.ConditionalExpression(expr, consequent, alternate));
+            expr = this.finalize(this.startNode(startToken), new Node.ConditionalExpression(expr, wsBeforeQuestion, consequent, wsBeforeColon, alternate));
             this.context.isAssignmentTarget = false;
             this.context.isBindingElement = false;
         }
@@ -1690,7 +1715,8 @@ export class Parser {
 
     parseAssignmentExpression(): Node.Expression {
         let expr;
-
+        
+        var wsBeforeAsync = "";
         if (!this.context.allowYield && this.matchKeyword('yield')) {
             expr = this.parseYieldExpression();
         } else {
@@ -1699,6 +1725,7 @@ export class Parser {
             expr = this.parseConditionalExpression();
 
             if (token.type === Token.Identifier && (token.lineNumber === this.lookahead.lineNumber) && token.value === 'async') {
+                wsBeforeAsync = token.wsBefore;
                 if (this.lookahead.type === Token.Identifier || this.matchKeyword('yield')) {
                     const arg = this.parsePrimaryExpression();
                     this.reinterpretExpressionAsPattern(arg);
@@ -1734,7 +1761,7 @@ export class Parser {
                     this.context.await = isAsync;
 
                     const node = this.startNode(startToken);
-                    this.expect('=>');
+                    var wsBeforeArrow = this.expect('=>');
                     let body: Node.BlockStatement | Node.Expression;
                     if (this.match('{')) {
                         const previousAllowIn = this.context.allowIn;
@@ -1752,8 +1779,8 @@ export class Parser {
                     if (this.context.strict && list.stricted) {
                         this.tolerateUnexpectedToken(list.stricted, list.message);
                     }
-                    expr = isAsync ? this.finalize(node, new Node.AsyncArrowFunctionExpression(list.params, body, expression)) :
-                        this.finalize(node, new Node.ArrowFunctionExpression(list.params, body, expression));
+                    expr = isAsync ? this.finalize(node, new Node.AsyncArrowFunctionExpression(wsBeforeAsync, wsBeforeOpening, list.params, wsBeforeClosing, noparens, wsBeforeArrow, body, expression)) :
+                        this.finalize(node, new Node.ArrowFunctionExpression(wsBeforeOpening, list.params, wsBeforeClosing, noparens, wsBeforeArrow, body, expression));
 
                     this.context.strict = previousStrict;
                     this.context.allowStrictDirective = previousAllowStrictDirective;
@@ -2004,7 +2031,7 @@ export class Parser {
         if (this.lookahead.type === Token.Identifier) {
             const keyToken = this.lookahead;
             key = this.parseVariableIdentifier();
-            const init = this.finalize(node, new Node.Identifier(keyToken.value));
+            const init = this.finalize(node, new Node.Identifier(keyToken.wsBefore, keyToken.value));
             if (this.match('=')) {
                 params.push(keyToken);
                 shorthand = true;
@@ -2116,7 +2143,7 @@ export class Parser {
             this.tolerateUnexpectedToken(token);
         }
 
-        return this.finalize(node, new Node.Identifier(token.value));
+        return this.finalize(node, new Node.Identifier(token.wsBefore, token.value));
     }
 
     parseVariableDeclaration(options: DeclarationOptions): Node.VariableDeclarator {
@@ -2157,11 +2184,11 @@ export class Parser {
 
     parseVariableStatement(): Node.VariableDeclaration {
         const node = this.createNode();
-        this.expectKeyword('var');
+        const wsBefore = this.expectKeyword('var');
         const declarations = this.parseVariableDeclarationList({ inFor: false });
         const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.VariableDeclaration(declarations, 'var', semicolon));
+        return this.finalize(node, new Node.VariableDeclaration(wsBefore, declarations, 'var', semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-empty-statement
@@ -2195,15 +2222,15 @@ export class Parser {
         let consequent: Node.Statement;
         let alternate: Node.Statement | null = null;
 
-        this.expectKeyword('if');
-        this.expect('(');
+        const wsBefore = this.expectKeyword('if');
+        const wsBeforeOpening = this.expect('(');
         const test = this.parseExpression();
 
         if (!this.match(')') && this.config.tolerant) {
             this.tolerateUnexpectedToken(this.nextToken());
             consequent = this.finalize(this.createNode(), new Node.EmptyStatement());
         } else {
-            this.expect(')');
+            const wsBeforeClosing = this.expect(')');
             consequent = this.parseIfClause();
             if (this.matchKeyword('else')) {
                 this.nextToken();
@@ -2211,34 +2238,36 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.IfStatement(test, consequent, alternate));
+        return this.finalize(node, new Node.IfStatement(wsBefore, wsBeforeOpening, test, wsBeforeClosing, consequent, alternate));
     }
 
     // https://tc39.github.io/ecma262/#sec-do-while-statement
 
     parseDoWhileStatement(): Node.DoWhileStatement {
         const node = this.createNode();
-        this.expectKeyword('do');
+        const wsBeforeDo = this.expectKeyword('do');
 
         const previousInIteration = this.context.inIteration;
         this.context.inIteration = true;
         const body = this.parseStatement();
         this.context.inIteration = previousInIteration;
 
-        this.expectKeyword('while');
-        this.expect('(');
+        const wsBeforeWhile = this.expectKeyword('while');
+        const wsBeforeOpening = this.expect('(');
         const test = this.parseExpression();
-
+        var semicolon = "";
+        var wsBeforeClosing = "";
         if (!this.match(')') && this.config.tolerant) {
             this.tolerateUnexpectedToken(this.nextToken());
         } else {
-            this.expect(')');
+            wsBeforeClosing = this.expect(')');
             if (this.match(';')) {
-                this.nextToken();
+              var semicolonToken = this.nextToken();
+              semicolon = semicolonToken.wsBefore + ";";
             }
         }
 
-        return this.finalize(node, new Node.DoWhileStatement(body, test));
+        return this.finalize(node, new Node.DoWhileStatement(wsBeforeDo, body, wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-while-statement
@@ -2247,15 +2276,15 @@ export class Parser {
         const node = this.createNode();
         let body;
 
-        this.expectKeyword('while');
-        this.expect('(');
+        const wsBeforeWhile = this.expectKeyword('while');
+        const wsBeforeOpening = this.expect('(');
         const test = this.parseExpression();
-
+        var wsBeforeClosing = "";
         if (!this.match(')') && this.config.tolerant) {
             this.tolerateUnexpectedToken(this.nextToken());
             body = this.finalize(this.createNode(), new Node.EmptyStatement());
         } else {
-            this.expect(')');
+            wsBeforeClosing = this.expect(')');
 
             const previousInIteration = this.context.inIteration;
             this.context.inIteration = true;
@@ -2263,7 +2292,7 @@ export class Parser {
             this.context.inIteration = previousInIteration;
         }
 
-        return this.finalize(node, new Node.WhileStatement(test, body));
+        return this.finalize(node, new Node.WhileStatement(wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, body));
     }
 
     // https://tc39.github.io/ecma262/#sec-for-statement
@@ -2277,15 +2306,18 @@ export class Parser {
         let left, right;
 
         const node = this.createNode();
-        this.expectKeyword('for');
-        this.expect('(');
-
+        const wsBeforeFor = this.expectKeyword('for');
+        const wsBeforeOpening = this.expect('(');
+        var wsBeforeSemicolon1 = "";
+        var wsBeforeSemicolon2 = "";
+        var wsBeforeKeyword = ""; // 'in' or 'of'
+        
         if (this.match(';')) {
-            this.nextToken();
+            wsBeforeSemicolon1 = this.nextToken().wsBefore;
         } else {
             if (this.matchKeyword('var')) {
                 init = this.createNode();
-                this.nextToken();
+                var wsBeforeVar = this.nextToken().wsBefore;
 
                 const previousAllowIn = this.context.allowIn;
                 this.context.allowIn = false;
@@ -2297,28 +2329,29 @@ export class Parser {
                     if (decl.init && (decl.id.type === Syntax.ArrayPattern || decl.id.type === Syntax.ObjectPattern || this.context.strict)) {
                         this.tolerateError(Messages.ForInOfLoopInitializer, 'for-in');
                     }
-                    init = this.finalize(init, new Node.VariableDeclaration(declarations, 'var'));
-                    this.nextToken();
+                    init = this.finalize(init, new Node.VariableDeclaration(wsBeforeVar, declarations, 'var'));
+                    wsBeforeKeyword = this.nextToken().wsBefore;
                     left = init;
                     right = this.parseExpression();
                     init = null;
                 } else if (declarations.length === 1 && declarations[0].init === null && this.matchContextualKeyword('of')) {
-                    init = this.finalize(init, new Node.VariableDeclaration(declarations, 'var'));
-                    this.nextToken();
+                    init = this.finalize(init, new Node.VariableDeclaration(wsBeforeVar, declarations, 'var'));
+                    wsBeforeKeyword = this.nextToken().wsBefore;
                     left = init;
                     right = this.parseAssignmentExpression();
                     init = null;
                     forIn = false;
                 } else {
-                    init = this.finalize(init, new Node.VariableDeclaration(declarations, 'var'));
-                    this.expect(';');
+                    init = this.finalize(init, new Node.VariableDeclaration(wsBeforeVar, declarations, 'var'));
+                    wsBeforeSemicolon1 = this.expect(';');
                 }
             } else if (this.matchKeyword('const') || this.matchKeyword('let')) {
                 init = this.createNode();
-                const kind = this.nextToken().value as string;
+                var kindToken = this.nextToken();
+                const kind = kindToken.value as string;
 
                 if (!this.context.strict && this.lookahead.value === 'in') {
-                    init = this.finalize(init, new Node.Identifier(kind));
+                    init = this.finalize(init, new Node.Identifier(kindToken.wsBefore, kind));
                     this.nextToken();
                     left = init;
                     right = this.parseExpression();
@@ -2330,13 +2363,13 @@ export class Parser {
                     this.context.allowIn = previousAllowIn;
 
                     if (declarations.length === 1 && declarations[0].init === null && this.matchKeyword('in')) {
-                        init = this.finalize(init, new Node.VariableDeclaration(declarations, kind));
+                        init = this.finalize(init, new Node.VariableDeclaration(kindToken.wsBefore, declarations, kind));
                         this.nextToken();
                         left = init;
                         right = this.parseExpression();
                         init = null;
                     } else if (declarations.length === 1 && declarations[0].init === null && this.matchContextualKeyword('of')) {
-                        init = this.finalize(init, new Node.VariableDeclaration(declarations, kind));
+                        init = this.finalize(init, new Node.VariableDeclaration(kindToken.wsBefore, declarations, kind));
                         this.nextToken();
                         left = init;
                         right = this.parseAssignmentExpression();
@@ -2884,7 +2917,9 @@ export class Parser {
         options = {
             simple: true,
             params: [],
-            firstRestricted: firstRestricted
+            firstRestricted: firstRestricted,
+            wsBeforeColons: [],
+            trailingcomma: false
         };
 
         var wsBeforeOpening = this.expect('(');
@@ -2895,12 +2930,9 @@ export class Parser {
                 if (this.match(')')) {
                     break;
                 }
-                var wsBeforeComma = this.expect(',');
-                var last = 
-                  options.params[options.params.length - 1];
-                last.wsAfter = wsBeforeComma;
-                last.comma = ",";
+                wsBeforeColons.push(this.expect(','));
                 if (this.match(')')) {
+                  options.trailingcomma = true;
                     break;
                 }
             }
@@ -2914,7 +2946,9 @@ export class Parser {
             firstRestricted: options.firstRestricted,
             message: options.message,
             wsBeforeOpening: wsBeforeOpening,
-            wsBeforeClosing: wsBeforeClosing
+            wsBeforeClosing: wsBeforeClosing,
+            wsBeforeColons: wsBeforeColons,
+            trailingcomma: options.trailingcomma
         };
     }
 
@@ -2979,6 +3013,7 @@ export class Parser {
 
         const formalParameters = this.parseFormalParameters(firstRestricted);
         const params = formalParameters.params;
+        const wsBeforeColons = formalParameters.wsBeforeColons;
         const stricted = formalParameters.stricted;
         firstRestricted = formalParameters.firstRestricted;
         if (formalParameters.message) {
@@ -3001,8 +3036,8 @@ export class Parser {
         this.context.await = previousAllowAwait;
         this.context.allowYield = previousAllowYield;
 
-        return isAsync ? this.finalize(node, new Node.AsyncFunctionDeclaration(id, params, body)) :
-            this.finalize(node, new Node.FunctionDeclaration(id, params, body, isGenerator));
+        return isAsync ? this.finalize(node, new Node.AsyncFunctionDeclaration(wsBefore, id, params, separators, body)) :
+            this.finalize(node, new Node.FunctionDeclaration(wsBefore, id, params, separators, body, isGenerator));
     }
 
     parseFunctionExpression(): Node.AsyncFunctionExpression | Node.FunctionExpression {

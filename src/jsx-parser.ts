@@ -64,8 +64,8 @@ export class JSXParser extends Parser {
         super(code, options, delegate);
     }
 
-    parsePrimaryExpression(): Node.Expression | JSXNode.JSXElement {
-        return this.match('<') ? this.parseJSXRoot() : super.parsePrimaryExpression();
+    parsePrimaryExpression(): Node.Expression/* | JSXNode.JSXElement*/ {
+        return this.match('<') ? this.parseJSXRoot() as unknown as Node.Expression : super.parsePrimaryExpression();
     }
 
     startJSX() {
@@ -308,6 +308,7 @@ export class JSXParser extends Parser {
             if (Character.isLineTerminator(ch.charCodeAt(0))) {
                 ++this.scanner.lineNumber;
                 if (ch === '\r' && this.scanner.source[this.scanner.index] === '\n') {
+                    text += '\n'; // So that text = raw;
                     ++this.scanner.index;
                 }
                 this.scanner.lineStart = this.scanner.index;
