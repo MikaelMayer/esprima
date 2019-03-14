@@ -144,12 +144,14 @@ export class JSXOpeningElement {
 export class JSXSpreadAttribute {
     readonly type: string;
     readonly argument: Node.Expression;
+    readonly wsBeforeClosing: string;
     unparse(parent?: Node.Unparsable): string {
-      return "..." + Node.unparseChild(this)(this.argument);
+      return "{..." + Node.unparseChild(this)(this.argument) + this.wsBeforeClosing + "}";
     }
-    constructor(argument: Node.Expression) {
+    constructor(argument: Node.Expression, wsBeforeClosing: string) {
         this.type = JSXSyntax.JSXSpreadAttribute;
         this.argument = argument;
+        this.wsBeforeClosing = wsBeforeClosing;
     }
 }
 

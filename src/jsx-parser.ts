@@ -80,14 +80,15 @@ export class JSXParser extends Parser {
         this.nextToken();
     }
 
-    reenterJSX() {
+    reenterJSX(): string {
         this.startJSX();
-        this.expectJSX('}');
+        const wsBefore = this.expectJSX('}');
 
         // Pop the closing '}' added from the lookahead.
         if (this.config.tokens) {
             this.tokens.pop();
         }
+        return wsBefore;
     }
 
     createJSXNode(): Marker {
@@ -356,6 +357,7 @@ export class JSXParser extends Parser {
         if (token.type !== Token.Punctuator || token.value !== value) {
             this.throwUnexpectedToken(token);
         }
+        return token.wsBefore;
     }
 
     // Return true if the next JSX token matches the specified punctuator.
@@ -419,7 +421,7 @@ export class JSXParser extends Parser {
             this.throwUnexpectedToken(token);
         }
         const raw = this.getTokenRaw(token);
-        return this.finalize(node, new Node.Literal(token.value, raw));
+        return this.finalize(node, new Node.Literal(token.wsBefore, token.value, raw));
     }
 
     parseJSXExpressionAttribute(): JSXNode.JSXExpressionContainer {
@@ -433,9 +435,9 @@ export class JSXParser extends Parser {
         }
 
         const expression = this.parseAssignmentExpression();
-        this.reenterJSX();
+        const wsBeforeClosing = this.reenterJSX();
 
-        return this.finalize(node, new JSXNode.JSXExpressionContainer(expression));
+        return this.finalize(node, new JSXNode.JSXExpressionContainer(expression, wsBeforeClosing));
     }
 
     parseJSXAttributeValue(): JSXNode.JSXAttributeValue {
@@ -447,11 +449,12 @@ export class JSXParser extends Parser {
         const node = this.createJSXNode();
         const name = this.parseJSXAttributeName();
         let value: JSXNode.JSXAttributeValue | null = null;
+        var wsBeforeEq = "";
         if (this.matchJSX('=')) {
-            this.expectJSX('=');
+            wsBeforeEq = this.expectJSX('=');
             value = this.parseJSXAttributeValue();
         }
-        return this.finalize(node, new JSXNode.JSXAttribute(name, value));
+        return this.finalize(node, new JSXNode.JSXAttribute(name, wsBeforeEq, value));
     }
 
     parseJSXSpreadAttribute(): JSXNode.JSXSpreadAttribute {
@@ -461,9 +464,9 @@ export class JSXParser extends Parser {
 
         this.finishJSX();
         const argument = this.parseAssignmentExpression();
-        this.reenterJSX();
+        const wsBeforeClosing = this.reenterJSX();
 
-        return this.finalize(node, new JSXNode.JSXSpreadAttribute(argument));
+        return this.finalize(node, new JSXNode.JSXSpreadAttribute(argument, wsBeforeClosing));
     }
 
     parseJSXAttributes(): JSXNode.JSXElementAttribute[] {
@@ -485,12 +488,16 @@ export class JSXParser extends Parser {
         const name = this.parseJSXElementName();
         const attributes = this.parseJSXAttributes();
         const selfClosing = this.matchJSX('/');
+        var wsBeforeEnd = "";
         if (selfClosing) {
-            this.expectJSX('/');
+            wsBeforeEnd = this.expectJSX('/');
         }
-        this.expectJSX('>');
+        var wsBeforeGt = this.expectJSX('>');
+        if(!selfClosing) {
+          wsBeforeEnd = wsBeforeGt;
+        }
 
-        return this.finalize(node, new JSXNode.JSXOpeningElement(name, selfClosing, attributes));
+        return this.finalize(node, new JSXNode.JSXOpeningElement(name, selfClosing, attributes, wsBeforeEnd));
     }
 
     parseJSXBoundaryElement(): JSXNode.JSXOpeningElement | JSXNode.JSXClosingElement {
@@ -500,19 +507,23 @@ export class JSXParser extends Parser {
         if (this.matchJSX('/')) {
             this.expectJSX('/');
             const elementName = this.parseJSXElementName();
-            this.expectJSX('>');
-            return this.finalize(node, new JSXNode.JSXClosingElement(elementName));
+            const wsBeforeEnd = this.expectJSX('>');
+            return this.finalize(node, new JSXNode.JSXClosingElement(elementName, wsBeforeEnd));
         }
 
         const name = this.parseJSXElementName();
         const attributes = this.parseJSXAttributes();
         const selfClosing = this.matchJSX('/');
+        var wsBeforeEnd = "";
         if (selfClosing) {
-            this.expectJSX('/');
+            wsBeforeEnd = this.expectJSX('/');
         }
-        this.expectJSX('>');
+        var wsBeforeGt = this.expectJSX('>');
+        if(!selfClosing) {
+          wsBeforeEnd = wsBeforeGt;
+        }
 
-        return this.finalize(node, new JSXNode.JSXOpeningElement(name, selfClosing, attributes));
+        return this.finalize(node, new JSXNode.JSXOpeningElement(name, selfClosing, attributes, wsBeforeEnd));
     }
 
     parseJSXEmptyExpression(): JSXNode.JSXEmptyExpression {
@@ -529,16 +540,17 @@ export class JSXParser extends Parser {
         this.expectJSX('{');
 
         let expression: Node.Expression | JSXNode.JSXEmptyExpression;
+        var wsBeforeEnd = "";
         if (this.matchJSX('}')) {
             expression = this.parseJSXEmptyExpression();
-            this.expectJSX('}');
+            wsBeforeEnd = this.expectJSX('}');
         } else {
             this.finishJSX();
             expression = this.parseAssignmentExpression();
-            this.reenterJSX();
+            wsBeforeEnd = this.reenterJSX();
         }
 
-        return this.finalize(node, new JSXNode.JSXExpressionContainer(expression));
+        return this.finalize(node, new JSXNode.JSXExpressionContainer(expression, wsBeforeEnd));
     }
 
     parseJSXChildren(): JSXNode.JSXChild[] {

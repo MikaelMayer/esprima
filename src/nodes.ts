@@ -12,7 +12,7 @@ export type ExportDeclaration = ExportAllDeclaration | ExportDefaultDeclaration 
 export type Expression = ArrayExpression | ArrowFunctionExpression | AssignmentExpression | AsyncArrowFunctionExpression | AsyncFunctionExpression |
     AwaitExpression | BinaryExpression | CallExpression | ClassExpression | ComputedMemberExpression |
     ConditionalExpression | Identifier | FunctionExpression | Literal | NewExpression | ObjectExpression |
-    RegexLiteral | SequenceExpression | StaticMemberExpression | TaggedTemplateExpression |
+    RegexLiteral | SequenceExpression | StaticMemberExpression | TemplateLiteral | TaggedTemplateExpression | Import |
     ThisExpression | UnaryExpression | UpdateExpression | YieldExpression;
 export type FunctionParameter = AssignmentPattern | BindingIdentifier | BindingPattern;
 export type ImportDeclarationSpecifier = ImportDefaultSpecifier | ImportNamespaceSpecifier | ImportSpecifier;
@@ -21,7 +21,7 @@ export type ObjectPatternProperty = Property | RestElement;
 export type Statement = AsyncFunctionDeclaration | BreakStatement | ContinueStatement | DebuggerStatement | DoWhileStatement |
     EmptyStatement | ExpressionStatement | Directive | ForStatement | ForInStatement | ForOfStatement |
     FunctionDeclaration | IfStatement | ReturnStatement | SwitchStatement | ThrowStatement |
-    TryStatement | VariableDeclaration | WhileStatement | WithStatement;
+    TryStatement | VariableDeclaration | WhileStatement | WithStatement | BlockStatement | LabeledStatement;
 export type PropertyKey = Identifier | Literal;
 export type PropertyValue = AssignmentPattern | AsyncFunctionExpression | BindingIdentifier | BindingPattern | FunctionExpression;
 export type StatementListItem = Declaration | Statement;
@@ -62,7 +62,7 @@ export var unparseChild = (parent: any = undefined) => (node: UnparsableOrNull) 
 function unparseArray(
   this: ArrayExpression | ArrayPattern,
   parent) {
-  return this.wsBefore +
+  return this.wsBeforeOpening +
     "[" +
     unparseChildren(this, this.separators, ", ")(this.elements) +
     this.wsBeforeClosing +
@@ -77,17 +77,17 @@ function unparseArray(
 export class ArrayExpression {
     readonly type: string;
     readonly elements: ArrayExpressionElement[];
-    readonly wsBefore: string;
+    readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
     readonly separators: string[];
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return unparseArray.bind(this)(parent);
     };
-    constructor(wsBefore: string, wsBeforeClosing: string, elements: ArrayExpressionElement[], separators: string[]) {
+    constructor(wsBeforeOpening: string, elements: ArrayExpressionElement[], separators: string[], wsBeforeClosing: string) {
         this.type = Syntax.ArrayExpression;
         this.elements = elements;
-        this.wsBefore = wsBefore;
+        this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
         this.separators = separators;
     }
@@ -96,17 +96,17 @@ export class ArrayExpression {
 export class ArrayPattern {
     readonly type: string;
     readonly elements: ArrayPatternElement[];
-    readonly wsBefore: string;
+    readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
     readonly separators: string[];
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return unparseArray.bind(this)(parent);
     };
-    constructor(wsBefore: string, wsBeforeClosing: string, elements: ArrayPatternElement[], separators: string[]) {
+    constructor(wsBeforeOpening: string, elements: ArrayPatternElement[], separators: string[], wsBeforeClosing: string) {
         this.type = Syntax.ArrayPattern;
         this.elements = elements;
-        this.wsBefore = wsBefore;
+        this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
         this.separators = separators;
     }
@@ -159,30 +159,28 @@ export class ArrowFunctionExpression {
     }
 }
 
-function binaryUnparser(this: AssignmentExpression | BinaryExpression, parent: any) {
-  return this.wsBefore +
-    unparseChild(this)(this.left) +
+function binaryUnparser(this: AssignmentExpression | BinaryExpression | AssignmentPattern, parent: any) {
+  return unparseChild(this)(this.left) +
     this.wsBeforeOp +
     this.operator +
-    unparseChild(this)(this.right);
+    unparseChild(this)(this.right) +
+    this.wsAfter;
 }
 export class AssignmentExpression {
     readonly type: string;
     readonly operator: string;
     readonly left: Expression;
     readonly right: Expression;
-    readonly wsBefore: string;
     readonly wsBeforeOp: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return binaryUnparser.bind(this)(parent) + this.wsAfter;
+      return binaryUnparser.bind(this)(parent);
     }
     constructor(wsBeforeOp: string, operator: string, left: Expression, right: Expression) {
         this.type = Syntax.AssignmentExpression;
         this.operator = operator;
         this.left = left;
         this.right = right;
-        this.wsBefore = "";
         this.wsBeforeOp = wsBeforeOp;
     }
 }
@@ -191,20 +189,17 @@ export class AssignmentPattern {
     readonly type: string;
     readonly left: BindingIdentifier | BindingPattern;
     readonly right: Expression;
-    readonly wsBeforeEq: string;
+    readonly wsBeforeOp: string;
+    readonly operator = "=";
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return unparseChild(this)(this.left) +
-        this.wsBeforeEq +
-        "=" +
-        unparseChild(this)(this.right) +
-        this.wsAfter;
+      return binaryUnparser.bind(this)(parent);
     }
-    constructor(left: BindingIdentifier | BindingPattern, wsBeforeEq: string, right: Expression) {
+    constructor(left: BindingIdentifier | BindingPattern, wsBeforeOp: string, right: Expression) {
         this.type = Syntax.AssignmentPattern;
         this.left = left;
         this.right = right;
-        this.wsBeforeEq = wsBeforeEq;
+        this.wsBeforeOp = wsBeforeOp;
     }
 }
 
@@ -356,26 +351,24 @@ export class BinaryExpression {
     readonly operator: string;
     readonly left: Expression;
     readonly right: Expression;
-    readonly wsBefore: string;
     readonly wsBeforeOp: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return binaryUnparser.bind(this)(parent) + this.wsAfter;
+      return binaryUnparser.bind(this)(parent);
     }
-    constructor(operator: string, left: Expression, right: Expression, wsBefore: string, wsBeforeOp: string) {
+    constructor(operator: string, left: Expression, right: Expression, wsBeforeOp: string) {
         const logical = (operator === '||' || operator === '&&');
         this.type = logical ? Syntax.LogicalExpression : Syntax.BinaryExpression;
         this.operator = operator;
         this.left = left;
         this.right = right;
-        this.wsBefore = wsBefore;
         this.wsBeforeOp = wsBeforeOp;
     }
 }
 
 export class BlockStatement {
     readonly type: string;
-    readonly body: Statement[];
+    readonly body: StatementListItem[];
     readonly wsBefore: string;
     readonly wsBeforeEnd: string;
     unparse(parent?: Unparsable): string {
@@ -385,7 +378,7 @@ export class BlockStatement {
         this.wsBeforeEnd +
         "}";
     }
-    constructor(wsBefore: string, body: Statement[], wsBeforeEnd: string) {
+    constructor(wsBefore: string, body: StatementListItem[], wsBeforeEnd: string) {
         this.type = Syntax.BlockStatement;
         this.body = body;
         this.wsBefore = wsBefore;
@@ -396,24 +389,21 @@ export class BlockStatement {
 var controlLabelStatementUnparseData = function(this: BreakStatement | ContinueStatement, parent, name) {
   return this.wsBefore +
     name +
-    this.wsBeforeLabel +
-    (this.label || "") +
+    unparseChild(this)(this.label) +
     this.semicolon;
 }
 export class BreakStatement {
     readonly type: string;
     readonly label: Identifier | null;
     readonly wsBefore: string;
-    readonly wsBeforeLabel: string;
     readonly semicolon: string;
     unparse(parent?: Unparsable): string {
       return controlLabelStatementUnparseData.bind(this)(parent, "break");
     }
-    constructor(wsBefore: string, wsBeforeLabel: string, label: Identifier | null, semicolon: string) {
+    constructor(wsBefore: string, label: Identifier | null, semicolon: string) {
         this.type = Syntax.BreakStatement;
         this.label = label;
         this.wsBefore = wsBefore;
-        this.wsBeforeLabel = wsBeforeLabel;
         this.semicolon = semicolon;
     }
 }
@@ -475,27 +465,30 @@ export class ClassBody {
     readonly type: string;
     readonly body: Property[];
     readonly wsBeforeOpening: string;
+    readonly wsAfterOpening: string;
     readonly wsBeforeClosing: string;
     unparse(parent?: Unparsable): string {
       return this.wsBeforeOpening +
        "{" +
+       this.wsAfterOpening +
        unparseChildren(this)(this.body) +
        this.wsBeforeClosing + 
        "}";
     }
-    constructor(wsBeforeOpening: string, body: Property[], wsBeforeClosing: string) {
+    constructor(wsBeforeOpening: string, wsAfterOpening: string, body: Property[], wsBeforeClosing: string) {
         this.type = Syntax.ClassBody;
         this.body = body;
         this.wsBeforeOpening = wsBeforeOpening;
+        this.wsAfterOpening = wsAfterOpening;
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }
 var classDeclarationUnparser = function(this: ClassDeclaration | ClassExpression, parent) {
   return this.wsBefore +
         "class" +
-        this.wsBeforeId + 
         unparseChild(this)(this.id) +
-        (this.superClass ? this.wsBeforeExtends + "extends" + this.wsBeforeSuperclass + unparseChild(this)(this.superClass) : "") +
+        (this.superClass ? this.wsBeforeExtends + "extends" + 
+        unparseChild(this)(this.superClass) : "") +
         unparseChild(this)(this.body) +
         this.wsAfter;
 }
@@ -505,23 +498,20 @@ export class ClassDeclaration {
     readonly superClass: Identifier | null;
     readonly body: ClassBody;
     readonly wsBefore: string;
-    readonly wsBeforeId: string;
     readonly wsBeforeExtends: string;
-    readonly wsBeforeSuperclass: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return classDeclarationUnparser.bind(this)(parent);
     }
-    constructor(wsBefore: string, wsBeforeId: string, id: Identifier | null,
-                wsBeforeExtends: string, wsBeforeSuperclass: string, superClass: Identifier | null,
+    constructor(wsBefore: string, id: Identifier | null,
+                wsBeforeExtends: string,
+                superClass: Identifier | null,
                 body: ClassBody) {
         this.type = Syntax.ClassDeclaration;
         this.id = id;
         this.superClass = superClass;
         this.wsBefore = wsBefore;
-        this.wsBeforeId = wsBeforeId;
         this.wsBeforeExtends = wsBeforeExtends;
-        this.wsBeforeSuperclass = wsBeforeSuperclass;
         this.body = body;
     }
 }
@@ -532,23 +522,20 @@ export class ClassExpression {
     readonly superClass: Identifier | null;
     readonly body: ClassBody;
     readonly wsBefore: string;
-    readonly wsBeforeId: string;
     readonly wsBeforeExtends: string;
-    readonly wsBeforeSuperclass: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return classDeclarationUnparser.bind(this)(parent);
     }
-    constructor(wsBefore: string, wsBeforeId: string, id: Identifier | null,
-                wsBeforeExtends: string, wsBeforeSuperclass: string, superClass: Identifier | null,
+    constructor(wsBefore: string, id: Identifier | null,
+                wsBeforeExtends: string,
+                superClass: Identifier | null,
                 body: ClassBody) {
         this.type = Syntax.ClassExpression;
         this.id = id;
         this.superClass = superClass;
         this.wsBefore = wsBefore;
-        this.wsBeforeId = wsBeforeId;
         this.wsBeforeExtends = wsBeforeExtends;
-        this.wsBeforeSuperclass = wsBeforeSuperclass;
         this.body = body;
     }
 }
@@ -611,16 +598,14 @@ export class ContinueStatement {
     readonly type: string;
     readonly label: Identifier | null;
     readonly wsBefore: string;
-    readonly wsBeforeLabel: string;
     readonly semicolon: string;
     unparse(parent?: Unparsable): string {
       return controlLabelStatementUnparseData.bind(this)(parent, "continue");
     };
-    constructor(wsBefore: string, wsBeforeLabel: string, label: Identifier | null, semicolon: string) {
+    constructor(wsBefore: string, label: Identifier | null, semicolon: string) {
         this.type = Syntax.ContinueStatement;
         this.label = label;
         this.wsBefore = wsBefore;
-        this.wsBeforeLabel = wsBeforeLabel;
         this.semicolon = semicolon;
     }
 }
@@ -692,12 +677,14 @@ export class DoWhileStatement {
 export class EmptyStatement {
     readonly type: string;
     readonly wsBefore: string;
+    readonly semicolon: string;
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + ";";
+      return this.wsBefore + this.semicolon;
     }
-    constructor(wsBefore: string) {
+    constructor(wsBefore: string, semicolon: string = ";") {
         this.type = Syntax.EmptyStatement;
         this.wsBefore = wsBefore;
+        this.semicolon = semicolon;
     }
 }
 
@@ -707,6 +694,7 @@ export class ExportAllDeclaration {
     readonly wsBefore: string;
     readonly wsBeforeStar: string;
     readonly wsBeforeFrom: string;
+    readonly semicolon: string;
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
         "export" +
@@ -714,14 +702,16 @@ export class ExportAllDeclaration {
         "*" +
         this.wsBeforeFrom +
         "from" +
-        unparseChild(this)(this.source);
+        unparseChild(this)(this.source) +
+        this.semicolon;
     }
-    constructor(wsBefore: string, wsBeforeStar: string, wsBeforeFrom: string, source: Literal) {
+    constructor(wsBefore: string, wsBeforeStar: string, wsBeforeFrom: string, source: Literal, semicolon: string = "") {
         this.type = Syntax.ExportAllDeclaration;
         this.wsBefore = wsBefore;
         this.wsBeforeStar = wsBeforeStar;
         this.wsBeforeFrom = wsBeforeFrom;
         this.source = source;
+        this.semicolon = semicolon;
     }
 }
 
@@ -730,18 +720,21 @@ export class ExportDefaultDeclaration {
     readonly declaration: ExportableDefaultDeclaration;
     readonly wsBefore: string;
     readonly wsBeforeDefault: string;
+    readonly semicolon: string;
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
         "export" +
         this.wsBeforeDefault +
         "default" +
-        unparseChild(this)(this.declaration);
+        unparseChild(this)(this.declaration) +
+        this.semicolon;
     }
-    constructor(wsBefore: string, wsBeforeDefault: string, declaration: ExportableDefaultDeclaration) {
+    constructor(wsBefore: string, wsBeforeDefault: string, declaration: ExportableDefaultDeclaration, semicolon: string = "") {
         this.type = Syntax.ExportDefaultDeclaration;
         this.declaration = declaration;
         this.wsBefore = wsBefore;
         this.wsBeforeDefault = wsBeforeDefault;
+        this.semicolon = semicolon;
     }
 }
 
@@ -751,35 +744,35 @@ export class ExportNamedDeclaration {
     readonly specifiers: ExportSpecifier[];
     readonly source: Literal | null;
     readonly wsBefore: string;
-    readonly wsBeforeDeclaration: string;
     readonly wsBeforeOpening: string;
     readonly separators: string[];
     readonly wsBeforeClosing: string;
     readonly wsBeforeFrom: string;
+    readonly semicolon: string;
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
         "export" +
-        (this.declaration ? this.wsBeforeDeclaration : "") +
-        unparseChild(this)(this.declaration) +
+        (this.declaration ?
+           unparseChild(this)(this.declaration): "") +
         (this.specifiers.length ? 
           this.wsBeforeOpening + "{" + unparseChildren(this, this.separators, ",")(this.specifiers) + this.wsBeforeClosing + "}"
           : ""
         ) + 
-        (this.source ? this.wsBeforeFrom + "from" + unparseChild(this)(this.source) : "");
+        (this.source ? this.wsBeforeFrom + "from" + unparseChild(this)(this.source) : "") + this.semicolon;
     }
-    constructor(wsBefore: string, wsBeforeDeclaration: string, declaration: ExportableNamedDeclaration | null,
+    constructor(wsBefore: string, declaration: ExportableNamedDeclaration | null,
                 wsBeforeOpening: string, specifiers: ExportSpecifier[], separators: string[], wsBeforeClosing: string,
-                wsBeforeFrom: string, source: Literal | null) {
+                wsBeforeFrom: string, source: Literal | null, semicolon: string = "") {
         this.type = Syntax.ExportNamedDeclaration;
         this.declaration = declaration;
         this.specifiers = specifiers;
         this.source = source;
         this.wsBefore = wsBefore;
-        this.wsBeforeDeclaration = wsBeforeDeclaration;
         this.wsBeforeOpening = wsBeforeOpening;
         this.separators = separators;
         this.wsBeforeClosing = wsBeforeClosing;
         this.wsBeforeFrom = wsBeforeFrom;
+        this.semicolon = semicolon;
     }
 }
 export class ExportSpecifier {
@@ -787,22 +780,20 @@ export class ExportSpecifier {
     readonly exported: Identifier;
     readonly local: Identifier;
     readonly noAs: boolean;
-    readonly wsBefore: string;
     readonly wsBeforeAs: string;
     wsAfter?: string;
     unparse(parent?: Unparsable): string {
       var localStr = unparseChild(this)(this.local);
       var exportedStr = unparseChild(this)(this.exported);
-      return this.wsBefore + localStr +
+      return localStr +
         (this.noAs && localStr == exportedStr ? "" : this.wsBeforeAs + "as" + unparseChild(this)(this.exported)) +
         (this.wsAfter || "");
     }
-    constructor(wsBefore: string, local: Identifier, noAs: boolean, wsBeforeAs: string, exported: Identifier) {
+    constructor(local: Identifier, noAs: boolean, wsBeforeAs: string, exported: Identifier) {
         this.type = Syntax.ExportSpecifier;
         this.exported = exported;
         this.local = local;
         this.noAs = noAs;
-        this.wsBefore = wsBefore;
         this.wsBeforeAs = wsBeforeAs;
     }
 }
@@ -1042,24 +1033,53 @@ export class Import {
 
 export class ImportDeclaration {
     readonly type: string;
+    // At most one default specifier 
+    // Followed by one ImportNamespaceSpecifier or many {ImportSpecifier}
     readonly specifiers: ImportDeclarationSpecifier[];
     readonly source: Literal;
     readonly wsBefore: string;
     readonly separators: string[];
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly wsBeforeFrom: string;
+    readonly semicolon: string;
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "import" +
-        unparseChildren(this, this.separators, ", ")(this.specifiers) +
-       (this.specifiers.length ? this.wsBeforeFrom + "from" : "") +
-       unparseChild(this)(this.source);
+      var result = this.wsBefore + "import";
+      if(this.specifiers.length == 0) {
+        return result + unparseChild(this)(this.source) + this.semicolon;
+      }
+      var insideImportSpecifiers = false;
+      for(var i = 0; i < this.specifiers.length; i++) {
+        var specifier = this.specifiers[i];
+        if(specifier.type == Syntax.ImportSpecifier) {
+          if(!insideImportSpecifiers) {
+            result += this.wsBeforeOpening + "{";
+            insideImportSpecifiers = true;
+          }
+        }
+        result += unparseChild(this)(specifier);
+        if(i < this.separators.length) {
+          result += this.separators[i];
+        } else if(i < this.specifiers.length - 1) {
+          result += ', ';
+        }
+      }
+      if(insideImportSpecifiers) {
+        result += this.wsBeforeClosing + "}";
+      }
+      return result + this.wsBeforeFrom + "from" +
+         unparseChild(this)(this.source) + this.semicolon;
     }
-    constructor(wsBefore: string, specifiers, separators: string[], wsBeforeFrom: string, source) {
+    constructor(wsBefore: string, wsBeforeOpening: string, specifiers: ImportDeclarationSpecifier[], separators: string[], wsBeforeClosing: string, wsBeforeFrom: string, source, semicolon: string = "") {
         this.type = Syntax.ImportDeclaration;
         this.specifiers = specifiers;
         this.source = source;
         this.wsBefore = wsBefore;
+        this.wsBeforeOpening = wsBeforeOpening;
         this.separators = separators;
+        this.wsBeforeClosing = wsBeforeClosing;
         this.wsBeforeFrom = wsBeforeFrom;
+        this.semicolon = semicolon;
     }
 }
 export class ImportDefaultSpecifier {
@@ -1077,12 +1097,14 @@ export class ImportNamespaceSpecifier {
     readonly type: string;
     readonly local: Identifier;
     readonly wsBefore: string;
+    readonly wsBeforeAs: string;
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "*" + unparseChild(this)(this.local);
+      return this.wsBefore + "*" + this.wsBeforeAs + "as" + unparseChild(this)(this.local);
     }
-    constructor(wsBefore: string, local: Identifier) {
+    constructor(wsBefore: string, wsBeforeAs: string, local: Identifier) {
         this.type = Syntax.ImportNamespaceSpecifier;
         this.wsBefore = wsBefore;
+        this.wsBeforeAs = wsBeforeAs;
         this.local = local;
     }
 }
@@ -1109,14 +1131,14 @@ export class ImportSpecifier {
 export class LabeledStatement {
     readonly type: string;
     readonly label: Identifier;
-    readonly body: Statement;
+    readonly body: Statement | ClassDeclaration;
     readonly wsBeforeColon: string;
-    unparses(parent) {
+    unparse(parent?: Unparsable): string {
       return unparseChild(this)(this.label) +
         this.wsBeforeColon + ":" +
         unparseChild(this)(this.body);
     }
-    constructor(label: Identifier, wsBeforeColon: string, body: Statement) {
+    constructor(label: Identifier, wsBeforeColon: string, body: Statement | ClassDeclaration) {
         this.type = Syntax.LabeledStatement;
         this.label = label;
         this.body = body;
@@ -1256,6 +1278,7 @@ export class NewExpression {
     readonly callee: Expression;
     readonly arguments: ArgumentListElement[];
     readonly wsBeforeNew: string;
+    readonly parentheses: boolean;
     readonly wsBeforeOpening: string;
     readonly separators: string[];
     readonly wsBeforeClosing: string;
@@ -1263,22 +1286,29 @@ export class NewExpression {
     unparse(parent?: Unparsable): string {
       return this.wsBeforeNew + "new" +
         unparseChild(this)(this.callee) +
-        this.wsBeforeOpening + "(" +
-        unparseChildren(this, this.separators, ", ")(this.arguments) +
-        this.wsBeforeClosing + ")" +
+        (this.parentheses || this.arguments.length > 0 ? 
+          this.wsBeforeOpening + "(" +
+          unparseChildren(this, this.separators, ", ")(this.arguments) +
+          this.wsBeforeClosing + ")"
+        : "") +
         this.wsAfter;
     }
-    constructor(wsBeforeNew: string, callee: Expression, wsBeforeOpening: string, args: ArgumentListElement[], separators: [], wsBeforeClosing: string) {
+    constructor(wsBeforeNew: string, callee: Expression, parentheses: boolean, wsBeforeOpening: string, args: ArgumentListElement[], separators: string[], wsBeforeClosing: string) {
         this.type = Syntax.NewExpression;
         this.callee = callee;
         this.arguments = args;
         this.wsBeforeNew = wsBeforeNew;
+        this.parentheses = parentheses;
         this.wsBeforeOpening = wsBeforeOpening;
         this.separators = separators;
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }
-
+var objectExpressionPatternUnparse = function(this: ObjectExpression | ObjectPattern) {
+  return this.wsBefore + "{" +
+    unparseChildren(this, this.separators, ", ")(this.properties) +
+    this.wsBeforeClosing + "}"  + this.wsAfter;
+}
 export class ObjectExpression {
     readonly type: string;
     readonly properties: ObjectExpressionProperty[];
@@ -1287,9 +1317,7 @@ export class ObjectExpression {
     readonly separators: string[];
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "{" +
-        unparseChildren(this, this.separators, ", ")(this.properties) +
-        this.wsBeforeClosing + "}"  + this.wsAfter;
+      return objectExpressionPatternUnparse.bind(this)();
     }
     constructor(wsBefore: string, properties: ObjectExpressionProperty[], separators: string[], wsBeforeClosing: string) {
         this.type = Syntax.ObjectExpression;
@@ -1308,10 +1336,7 @@ export class ObjectPattern {
     readonly wsBeforeClosing: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "{" +
-        unparseChildren(this, this.separators, ", ")(this.properties) +
-        this.wsBeforeClosing +
-        this.wsAfter;
+      return objectExpressionPatternUnparse.bind(this)();
     }
     constructor(wsBefore: string, properties: ObjectPatternProperty[], separators: string[], wsBeforeClosing: string) {
         this.type = Syntax.ObjectPattern;
@@ -1333,6 +1358,7 @@ export class Property {
     readonly method: boolean;
     readonly shorthand: boolean;
     readonly wsBeforeColon: string;
+    wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return (this.method && this.value ? 
         isFunctionExpression(this.value) ?
@@ -1341,7 +1367,7 @@ export class Property {
       : "") +
         unparseChild(this)(this.key) +
         (this.method ? this.wsBeforeColon + ":" : "") +
-        (this.shorthand ? "" : unparseChild(this)(this.value));
+        (this.shorthand ? "" : unparseChild(this)(this.value)) + this.wsAfter;
     }
     constructor(kind: string, key: PropertyKey, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
         this.type = Syntax.Property;
@@ -1434,14 +1460,16 @@ export class SequenceExpression {
     readonly expressions: Expression[];
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
+    readonly parentheses: boolean;
     readonly separators: string[];
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBeforeOpening + "(" + unparseChildren(this, this.separators, ", ")(this.expressions) + this.wsBeforeClosing + ")" + this.wsAfter;
+      return (this.parentheses ? this.wsBeforeOpening + "(" : "") + unparseChildren(this, this.separators, ", ")(this.expressions) + (this.parentheses ? this.wsBeforeClosing + ")" : "") + this.wsAfter;
     }
-    constructor(wsBeforeOpening: string, expressions: Expression[], separators: string[], wsBeforeClosing: string) {
+    constructor(parentheses: boolean, wsBeforeOpening: string, expressions: Expression[], separators: string[], wsBeforeClosing: string) {
         this.type = Syntax.SequenceExpression;
         this.expressions = expressions;
+        this.parentheses = parentheses;
         this.wsBeforeOpening = wsBeforeOpening;
         this.separators = separators;
         this.wsBeforeClosing = wsBeforeClosing;
@@ -1506,7 +1534,7 @@ export class Super {
 export class SwitchCase {
     readonly type: string;
     readonly test: Expression | null;
-    readonly consequent: Statement[];
+    readonly consequent: StatementListItem[];
     readonly wsBefore: string;
     readonly wsBeforeColon: string;
     unparse(parent?: Unparsable): string {
@@ -1514,7 +1542,7 @@ export class SwitchCase {
         this.wsBeforeColon + ":" +
         unparseChildren(this)(this.consequent);
     }
-    constructor(wsBefore: string, test: Expression, wsBeforeColon: string, consequent: Statement[]) {
+    constructor(wsBefore: string, test: Expression, wsBeforeColon: string, consequent: StatementListItem[]) {
         this.type = Syntax.SwitchCase;
         this.test = test;
         this.consequent = consequent;
