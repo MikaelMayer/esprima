@@ -203,7 +203,7 @@ describe('esprima.parse', function () {
         expression = statement.expression;
         comments = statement.leadingComments;
 
-        assert.deepEqual(expression, { type: 'Literal', value: 42, raw: '42' });
+        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42' });
         assert.deepEqual(statement.leadingComments, [{ type: 'Block', value: ' universe ', range: [0, 14] }]);
     });
 
@@ -215,16 +215,16 @@ describe('esprima.parse', function () {
     it('should include the list of tokens when specified', function () {
         var ast = esprima.parse('x = 1', { tokens: true });
         assert.deepEqual(ast.tokens.length, 3);
-        assert.deepEqual(ast.tokens[0], { type: 'Identifier', value: 'x' });
-        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', value: '=' });
-        assert.deepEqual(ast.tokens[2], { type: 'Numeric', value: '1' });
+        assert.deepEqual(ast.tokens[0], { type: 'Identifier', wsBefore: '', value: 'x' });
+        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=' });
+        assert.deepEqual(ast.tokens[2], { type: 'Numeric', wsBefore: ' ', value: '1' });
     });
 
     it('should include the list of tokens with index-based location when specified', function () {
         var ast = esprima.parse('y = 2', { tokens: true, range: true });
-        assert.deepEqual(ast.tokens[0], { type: 'Identifier', value: 'y', range: [0, 1] });
-        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', value: '=', range: [2, 3] });
-        assert.deepEqual(ast.tokens[2], { type: 'Numeric', value: '2', range: [4, 5] });
+        assert.deepEqual(ast.tokens[0], { type: 'Identifier', wsBefore: '', value: 'y', range: [0, 1] });
+        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=', range: [2, 3] });
+        assert.deepEqual(ast.tokens[2], { type: 'Numeric', wsBefore: ' ', value: '2', range: [4, 5] });
     });
 
     it('should include the list of tokens with line and column-based location when specified', function () {
@@ -269,11 +269,11 @@ describe('esprima.parse', function () {
         pattern.properties[0].key.name = 'foo';
         expr.properties[0].key.name = 'bar';
 
-        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', name: 'a' });
-        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', name: 'b' });
-        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', name: 'x' });
-        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', name: 'y' });
-        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', name: 'z' });
+        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a' });
+        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b' });
+        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x' });
+        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y' });
+        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z' });
     });
 });
 
@@ -379,7 +379,7 @@ describe('esprima.parseModule', function () {
         expression = statement.expression;
         comments = statement.leadingComments;
 
-        assert.deepEqual(expression, { type: 'Literal', value: 42, raw: '42' });
+        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42' });
         assert.deepEqual(statement.leadingComments, [{ type: 'Block', value: ' universe ', range: [0, 14] }]);
     });
 
@@ -391,16 +391,16 @@ describe('esprima.parseModule', function () {
     it('should include the list of tokens when specified', function () {
         var ast = esprima.parseModule('x = 1', { tokens: true });
         assert.deepEqual(ast.tokens.length, 3);
-        assert.deepEqual(ast.tokens[0], { type: 'Identifier', value: 'x' });
-        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', value: '=' });
-        assert.deepEqual(ast.tokens[2], { type: 'Numeric', value: '1' });
+        assert.deepEqual(ast.tokens[0], { type: 'Identifier', wsBefore: '', value: 'x' });
+        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=' });
+        assert.deepEqual(ast.tokens[2], { type: 'Numeric', wsBefore: ' ', value: '1' });
     });
 
     it('should include the list of tokens with index-based location when specified', function () {
         var ast = esprima.parseModule('y = 2', { tokens: true, range: true });
-        assert.deepEqual(ast.tokens[0], { type: 'Identifier', value: 'y', range: [0, 1] });
-        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', value: '=', range: [2, 3] });
-        assert.deepEqual(ast.tokens[2], { type: 'Numeric', value: '2', range: [4, 5] });
+        assert.deepEqual(ast.tokens[0], { type: 'Identifier', wsBefore: '', value: 'y', range: [0, 1] });
+        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=', range: [2, 3] });
+        assert.deepEqual(ast.tokens[2], { type: 'Numeric', wsBefore: ' ', value: '2', range: [4, 5] });
     });
 
     it('should include the list of tokens with line and column-based location when specified', function () {
@@ -445,11 +445,11 @@ describe('esprima.parseModule', function () {
         pattern.properties[0].key.name = 'foo';
         expr.properties[0].key.name = 'bar';
 
-        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', name: 'a' });
-        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', name: 'b' });
-        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', name: 'x' });
-        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', name: 'y' });
-        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', name: 'z' });
+        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a' });
+        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b' });
+        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x' });
+        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y' });
+        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z' });
     });
 
     it('should perform strict mode parsing', function () {
@@ -562,7 +562,7 @@ describe('esprima.parseScript', function () {
         expression = statement.expression;
         comments = statement.leadingComments;
 
-        assert.deepEqual(expression, { type: 'Literal', value: 42, raw: '42' });
+        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42' });
         assert.deepEqual(statement.leadingComments, [{ type: 'Block', value: ' universe ', range: [0, 14] }]);
     });
 
@@ -574,16 +574,16 @@ describe('esprima.parseScript', function () {
     it('should include the list of tokens when specified', function () {
         var ast = esprima.parseScript('x = 1', { tokens: true });
         assert.deepEqual(ast.tokens.length, 3);
-        assert.deepEqual(ast.tokens[0], { type: 'Identifier', value: 'x' });
-        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', value: '=' });
-        assert.deepEqual(ast.tokens[2], { type: 'Numeric', value: '1' });
+        assert.deepEqual(ast.tokens[0], { type: 'Identifier', wsBefore: '', value: 'x' });
+        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=' });
+        assert.deepEqual(ast.tokens[2], { type: 'Numeric', wsBefore: ' ', value: '1' });
     });
 
     it('should include the list of tokens with index-based location when specified', function () {
         var ast = esprima.parseScript('y = 2', { tokens: true, range: true });
-        assert.deepEqual(ast.tokens[0], { type: 'Identifier', value: 'y', range: [0, 1] });
-        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', value: '=', range: [2, 3] });
-        assert.deepEqual(ast.tokens[2], { type: 'Numeric', value: '2', range: [4, 5] });
+        assert.deepEqual(ast.tokens[0], { type: 'Identifier', wsBefore: '', value: 'y', range: [0, 1] });
+        assert.deepEqual(ast.tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=', range: [2, 3] });
+        assert.deepEqual(ast.tokens[2], { type: 'Numeric', wsBefore: ' ', value: '2', range: [4, 5] });
     });
 
     it('should include the list of tokens with line and column-based location when specified', function () {
@@ -628,11 +628,11 @@ describe('esprima.parseScript', function () {
         pattern.properties[0].key.name = 'foo';
         expr.properties[0].key.name = 'bar';
 
-        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', name: 'a' });
-        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', name: 'b' });
-        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', name: 'x' });
-        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', name: 'y' });
-        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', name: 'z' });
+        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a' });
+        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b' });
+        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x' });
+        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y' });
+        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z' });
     });
 });
 
@@ -658,9 +658,9 @@ describe('esprima.parse delegate', function () {
 
         assert.deepEqual(list.length, 7);
         assert.deepEqual(list[0], { type: 'BlockComment', value: ' prolog ' });
-        assert.deepEqual(list[1], { type: 'Identifier', name: 'answer' });
+        assert.deepEqual(list[1], { type: 'Identifier', wsBefore: '/* prolog */ ', name: 'answer' });
         assert.deepEqual(list[2], { type: 'LineComment', value: ' epilog' });
-        assert.deepEqual(list[3], { type: 'Literal', value: 42, raw: '42' });
+        assert.deepEqual(list[3], { type: 'Literal', wsBefore: ' ', value: 42, raw: '42' });
         assert.deepEqual(list[4].type, 'AssignmentExpression');
         assert.deepEqual(list[5].type, 'ExpressionStatement');
         assert.deepEqual(list[6].type, 'Program');
@@ -674,7 +674,7 @@ describe('esprima.parse delegate', function () {
             }
         }
         esprima.parse('answer = 42 // universe', {}, walk);
-        assert.deepEqual(constant, { type: 'Literal', value: 42, raw: '42' });
+        assert.deepEqual(constant, { type: 'Literal', wsBefore: ' ', value: 42, raw: '42' });
     });
 
     it('should be able to mutate each node', function () {
@@ -876,15 +876,15 @@ describe('esprima.tokenize', function () {
 
     it('should exclude list of errors in non-tolerant mode', function () {
         var tokens = esprima.tokenize('x', { tolerant: false });
-        assert.deepEqual(tokens, [{ type: 'Identifier', value: 'x' }]);
+        assert.deepEqual(tokens, [{ type: 'Identifier', wsBefore: '', value: 'x' }]);
     });
 
     it('should include index-based location for the tokens when specified', function () {
         var tokens = esprima.tokenize('answer = 42', { range: true });
         assert.deepEqual(tokens.length, 3);
-        assert.deepEqual(tokens[0], { type: 'Identifier', value: 'answer', range: [0, 6] });
-        assert.deepEqual(tokens[1], { type: 'Punctuator', value: '=', range: [7, 8] });
-        assert.deepEqual(tokens[2], { type: 'Numeric', value: '42', range: [9, 11] });
+        assert.deepEqual(tokens[0], { type: 'Identifier', wsBefore: '', value: 'answer', range: [0, 6] });
+        assert.deepEqual(tokens[1], { type: 'Punctuator', wsBefore: ' ', value: '=', range: [7, 8] });
+        assert.deepEqual(tokens[2], { type: 'Numeric', wsBefore: ' ', value: '42', range: [9, 11] });
         assert.ifError(tokens[0].loc);
     });
 
@@ -916,11 +916,11 @@ describe('esprima.tokenize delegate', function () {
             list.push(entry);
         });
         assert.deepEqual(list.length, 5);
-        assert.deepEqual(list[0], { type: 'Identifier', value: 'p' });
-        assert.deepEqual(list[1], { type: 'Punctuator', value: '=' });
-        assert.deepEqual(list[2], { type: 'Numeric', value: '1' });
-        assert.deepEqual(list[3], { type: 'Punctuator', value: ',' });
-        assert.deepEqual(list[4], { type: 'Identifier', value: 'r' });
+        assert.deepEqual(list[0], { type: 'Identifier', wsBefore: '', value: 'p' });
+        assert.deepEqual(list[1], { type: 'Punctuator', wsBefore: ' ', value: '=' });
+        assert.deepEqual(list[2], { type: 'Numeric', wsBefore: ' ', value: '1' });
+        assert.deepEqual(list[3], { type: 'Punctuator', vwsBefore: '', alue: ',' });
+        assert.deepEqual(list[4], { type: 'Identifier', wsBefore: ' ', value: 'r' });
     });
 
     it('should receive all the tokens with the location information', function () {
@@ -929,9 +929,9 @@ describe('esprima.tokenize delegate', function () {
             list.push(entry);
         });
         assert.deepEqual(list.length, 3);
-        assert.deepEqual(list[0], { type: 'Identifier', value: 's', range: [0, 1] });
-        assert.deepEqual(list[1], { type: 'Punctuator', value: '=', range: [2, 3] });
-        assert.deepEqual(list[2], { type: 'Numeric', value: '3', range: [4, 5] });
+        assert.deepEqual(list[0], { type: 'Identifier', wsBefore: '', value: 's', range: [0, 1] });
+        assert.deepEqual(list[1], { type: 'Punctuator', wsBefore: ' ', value: '=', range: [2, 3] });
+        assert.deepEqual(list[2], { type: 'Numeric', wsBefore: ' ', value: '3', range: [4, 5] });
     });
 
     it('should be able to simplify the token structure', function () {
