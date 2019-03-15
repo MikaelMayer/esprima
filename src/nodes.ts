@@ -1742,24 +1742,27 @@ export class TaggedTemplateExpression {
 }
 
 interface TemplateElementValue {
-    cooked: string; // Only this one matter for unparsing.
+    cooked: string; // Can be modified.
     raw: string;
 }
 
 export class TemplateElement {
     readonly type: string;
     readonly value: TemplateElementValue;
+    readonly originalCooked: string;
     readonly tail: boolean;
     wsBefore: string = ""; // Not much sense here, there is yet no kind of whitespace for template elements
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
-        this.value.cooked.replace(/\\/g, "\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${") +
+        (this.value.cooked == this.originalCooked ? this.value.raw :
+          this.value.cooked.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${")) +
         this.wsAfter;
     }
     constructor(value: TemplateElementValue, tail: boolean) {
         this.type = Syntax.TemplateElement;
         this.value = value;
+        this.originalCooked = value.cooked;
         this.tail = tail;
     }
 }

@@ -398,12 +398,8 @@ export class Parser {
         return token;
     }
 
-    nextRegexToken(): RawToken {
-        var wsStart = this.scanner.index;
+    nextRegexToken(ws: string): RawToken {
         this.collectComments();
-        var tokenStart = this.scanner.index;
-        var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
-        
         const token = this.scanner.scanRegExp(ws);
         if (this.config.tokens) {
             // Pop the previous token, '/' or '/='
@@ -722,7 +718,7 @@ export class Parser {
                         this.context.isAssignmentTarget = false;
                         this.context.isBindingElement = false;
                         this.scanner.index = this.startMarker.index;
-                        token = this.nextRegexToken();
+                        token = this.nextRegexToken(this.lookahead.wsBefore);
                         raw = this.getTokenRaw(token);
                         expr = this.finalize(node, new Node.RegexLiteral(token.wsBefore, token.regex as RegExp, raw, token.pattern, token.flags));
                         break;
@@ -2496,7 +2492,7 @@ export class Parser {
 
                 if (!this.context.strict && this.lookahead.value === 'in') {
                     init = this.finalize(init, new Node.Identifier(kindToken.wsBefore, kind, this.getTokenRaw(kindToken)));
-                    this.nextToken();
+                    wsBeforeKeyword = this.nextToken().wsBefore;
                     left = init;
                     right = this.parseExpression();
                     init = null;
