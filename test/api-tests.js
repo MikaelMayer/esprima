@@ -203,7 +203,7 @@ describe('esprima.parse', function () {
         expression = statement.expression;
         comments = statement.leadingComments;
 
-        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42' });
+        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42', original: 42, wsAfter: "" });
         assert.deepEqual(statement.leadingComments, [{ type: 'Block', value: ' universe ', range: [0, 14] }]);
     });
 
@@ -257,7 +257,7 @@ describe('esprima.parse', function () {
 
         assert.deepEqual(expression.type, 'JSXElement');
         assert.deepEqual(expression.openingElement.type, 'JSXOpeningElement');
-        assert.deepEqual(expression.openingElement.name, { type: 'JSXIdentifier', name: 'title' });
+        assert.deepEqual(expression.openingElement.name, { type: 'JSXIdentifier', name: 'title', wsAfter: "", wsBefore: "" });
         assert.deepEqual(expression.closingElement, null);
     });
 
@@ -269,11 +269,11 @@ describe('esprima.parse', function () {
         pattern.properties[0].key.name = 'foo';
         expr.properties[0].key.name = 'bar';
 
-        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a' });
-        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b' });
-        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x' });
-        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y' });
-        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z' });
+        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a', original: 'a', nameRaw: 'a', wsAfter: "" });
+        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b', original: 'b', nameRaw: 'b', wsAfter: "" });
+        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x', original: 'x', nameRaw: 'x', wsAfter: "" });
+        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y', original: 'y', nameRaw: 'y', wsAfter: "" });
+        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z', original: 'z', nameRaw: 'z', wsAfter: "" });
     });
 });
 
@@ -379,7 +379,7 @@ describe('esprima.parseModule', function () {
         expression = statement.expression;
         comments = statement.leadingComments;
 
-        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42' });
+        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42', original: 42, wsAfter: "" });
         assert.deepEqual(statement.leadingComments, [{ type: 'Block', value: ' universe ', range: [0, 14] }]);
     });
 
@@ -433,7 +433,7 @@ describe('esprima.parseModule', function () {
 
         assert.deepEqual(expression.type, 'JSXElement');
         assert.deepEqual(expression.openingElement.type, 'JSXOpeningElement');
-        assert.deepEqual(expression.openingElement.name, { type: 'JSXIdentifier', name: 'title' });
+        assert.deepEqual(expression.openingElement.name, { type: 'JSXIdentifier', name: 'title', wsBefore: '', wsAfter: ''});
         assert.deepEqual(expression.closingElement, null);
     });
 
@@ -445,11 +445,11 @@ describe('esprima.parseModule', function () {
         pattern.properties[0].key.name = 'foo';
         expr.properties[0].key.name = 'bar';
 
-        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a' });
-        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b' });
-        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x' });
-        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y' });
-        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z' });
+        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a', original: 'a', nameRaw: 'a', wsAfter: '' });
+        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b', original: 'b', nameRaw: 'b', wsAfter: '' });
+        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x', original: 'x', nameRaw: 'x', wsAfter: '' });
+        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y', original: 'y', nameRaw: 'y', wsAfter: '' });
+        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z', original: 'z', nameRaw: 'z', wsAfter: '' });
     });
 
     it('should perform strict mode parsing', function () {
@@ -562,7 +562,7 @@ describe('esprima.parseScript', function () {
         expression = statement.expression;
         comments = statement.leadingComments;
 
-        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42' });
+        assert.deepEqual(expression, { type: 'Literal', wsBefore: '/* universe */ ', value: 42, raw: '42', original: 42, wsAfter: "" });
         assert.deepEqual(statement.leadingComments, [{ type: 'Block', value: ' universe ', range: [0, 14] }]);
     });
 
@@ -616,7 +616,7 @@ describe('esprima.parseScript', function () {
 
         assert.deepEqual(expression.type, 'JSXElement');
         assert.deepEqual(expression.openingElement.type, 'JSXOpeningElement');
-        assert.deepEqual(expression.openingElement.name, { type: 'JSXIdentifier', name: 'title' });
+        assert.deepEqual(expression.openingElement.name, { type: 'JSXIdentifier', name: 'title', wsAfter: '', wsBefore: '' });
         assert.deepEqual(expression.closingElement, null);
     });
 
@@ -628,11 +628,11 @@ describe('esprima.parseScript', function () {
         pattern.properties[0].key.name = 'foo';
         expr.properties[0].key.name = 'bar';
 
-        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a' });
-        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b' });
-        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x' });
-        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y' });
-        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z' });
+        assert.deepEqual(pattern.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'a', original: 'a', nameRaw: 'a', wsAfter: '' });
+        assert.deepEqual(pattern.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'b', original: 'b', nameRaw: 'b', wsAfter: '' });
+        assert.deepEqual(expr.properties[0].value, { type: 'Identifier', wsBefore: '', name: 'x', original: 'x', nameRaw: 'x', wsAfter: '' });
+        assert.deepEqual(expr.properties[1].value, { type: 'Identifier', wsBefore: ' ', name: 'y', original: 'y', nameRaw: 'y', wsAfter: '' });
+        assert.deepEqual(expr.properties[2].value, { type: 'Identifier', wsBefore: ' ', name: 'z', original: 'z', nameRaw: 'z', wsAfter: '' });
     });
 });
 
@@ -658,9 +658,9 @@ describe('esprima.parse delegate', function () {
 
         assert.deepEqual(list.length, 7);
         assert.deepEqual(list[0], { type: 'BlockComment', value: ' prolog ' });
-        assert.deepEqual(list[1], { type: 'Identifier', wsBefore: '/* prolog */ ', name: 'answer' });
+        assert.deepEqual(list[1], { type: 'Identifier', wsBefore: '/* prolog */ ', name: 'answer', original: 'answer', nameRaw: 'answer', wsAfter: '' });
         assert.deepEqual(list[2], { type: 'LineComment', value: ' epilog' });
-        assert.deepEqual(list[3], { type: 'Literal', wsBefore: ' ', value: 42, raw: '42' });
+        assert.deepEqual(list[3], { type: 'Literal', wsBefore: ' ', value: 42, raw: '42' , original: 42, wsAfter: ""});
         assert.deepEqual(list[4].type, 'AssignmentExpression');
         assert.deepEqual(list[5].type, 'ExpressionStatement');
         assert.deepEqual(list[6].type, 'Program');
@@ -674,7 +674,7 @@ describe('esprima.parse delegate', function () {
             }
         }
         esprima.parse('answer = 42 // universe', {}, walk);
-        assert.deepEqual(constant, { type: 'Literal', wsBefore: ' ', value: 42, raw: '42' });
+        assert.deepEqual(constant, { type: 'Literal', wsBefore: ' ', value: 42, raw: '42' , original: 42, wsAfter: ""});
     });
 
     it('should be able to mutate each node', function () {
@@ -916,10 +916,10 @@ describe('esprima.tokenize delegate', function () {
             list.push(entry);
         });
         assert.deepEqual(list.length, 5);
-        assert.deepEqual(list[0], { type: 'Identifier', wsBefore: '', value: 'p' });
+        assert.deepEqual(list[0], { type: 'Identifier', wsBefore: '', value: 'p'});
         assert.deepEqual(list[1], { type: 'Punctuator', wsBefore: ' ', value: '=' });
         assert.deepEqual(list[2], { type: 'Numeric', wsBefore: ' ', value: '1' });
-        assert.deepEqual(list[3], { type: 'Punctuator', vwsBefore: '', alue: ',' });
+        assert.deepEqual(list[3], { type: 'Punctuator', wsBefore: '', value: ',' });
         assert.deepEqual(list[4], { type: 'Identifier', wsBefore: ' ', value: 'r' });
     });
 
