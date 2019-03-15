@@ -1809,7 +1809,9 @@ export class TryStatement {
     readonly wsBeforeFinally: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "try" + unparseChild(this)(this.handler) +
+      return this.wsBefore + "try" + 
+        unparseChild(this)(this.block) +
+        unparseChild(this)(this.handler) +
         (this.finalizer ? this.wsBeforeFinally + "finally" + unparseChild(this)(this.finalizer) : "") +
         this.wsAfter;
     }
