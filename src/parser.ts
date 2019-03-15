@@ -1211,7 +1211,7 @@ export class Parser {
                         }
                     }
                     if (!arrow) {
-                        expr = this.finalize(this.startNode(startToken), new Node.SequenceExpression(true, wsBeforeOpening, expressions, separators, wsBeforeClosing));
+                        expr = this.finalize(this.startNode(startToken), new Node.SequenceExpression(false, "", expressions, separators, ""));
                     }
                 }
 
