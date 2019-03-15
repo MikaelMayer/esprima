@@ -22,7 +22,7 @@ export type Statement = AsyncFunctionDeclaration | BreakStatement | ContinueStat
     EmptyStatement | ExpressionStatement | Directive | ForStatement | ForInStatement | ForOfStatement |
     FunctionDeclaration | IfStatement | ReturnStatement | SwitchStatement | ThrowStatement |
     TryStatement | VariableDeclaration | WhileStatement | WithStatement | BlockStatement | LabeledStatement;
-export type PropertyKey = Identifier | Literal;
+export type PropertyKey = Identifier | Literal | Expression;
 export type PropertyValue = AssignmentPattern | AsyncFunctionExpression | BindingIdentifier | BindingPattern | FunctionExpression;
 export type StatementListItem = Declaration | Statement;
 export type UnparseElement = { name?: string, map?: any } | string;
@@ -1327,6 +1327,8 @@ export class MethodDefinition {
     readonly kind: string;
     readonly static: boolean;
     wsBefore: string = "";
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly wsBeforeStatic: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
@@ -1336,11 +1338,13 @@ export class MethodDefinition {
         (this.value && isFunctionExpression(this.value) ?
           (this.value.async ? this.value.wsBeforeAsync + "async" : "") +
           (this.value.generator ? this.value.wsBeforeStar + "*" : "") : "") +
+        (this.computed ? this.wsBeforeOpening + "[" : "") +
         keyStr +
+        (this.computed ? this.wsBeforeClosing + "]" : "") +
         unparseChild(this)(this.value) +
         this.wsAfter;
     }
-    constructor(wsBeforeStatic: string, key: Expression, computed: boolean, value: AsyncFunctionExpression | FunctionExpression | null, kind: string, isStatic: boolean) {
+    constructor(wsBeforeStatic: string, key: Expression, computed: boolean, wsBeforeOpening: string, wsBeforeClosing: string, value: AsyncFunctionExpression | FunctionExpression | null, kind: string, isStatic: boolean) {
         this.type = Syntax.MethodDefinition;
         this.key = key;
         this.computed = computed;
@@ -1348,6 +1352,8 @@ export class MethodDefinition {
         this.kind = kind;
         this.static = isStatic;
         this.wsBeforeStatic = wsBeforeStatic;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
     }
 }
 
@@ -1457,6 +1463,8 @@ export class Property {
     readonly method: boolean;
     readonly shorthand: boolean;
     wsBefore: string = "";
+    readonly wsBeforeOpening: string;
+    readonly wsBeforeClosing: string;
     readonly wsBeforeGetSet: string;
     readonly wsBeforeColon: string;
     wsAfter: string = "";
@@ -1468,11 +1476,11 @@ export class Property {
           (this.value.generator ? this.value.wsBeforeStar + "*" : "") : ""
       : "") +
         (this.kind == "get" || this.kind == "set" ? this.wsBeforeGetSet + this.kind : "") +
-        (!this.shorthand || (this.value && !ap) ? unparseChild(this)(this.key) : "") +
+        (!this.shorthand || (this.value && !ap) ? (this.computed ? this.wsBeforeOpening + "[" : "") + unparseChild(this)(this.key) + (this.computed ? this.wsBeforeClosing + "]" : "")  : "") +
         (this.method || this.shorthand || this.kind == "get" || this.kind == "set" ? "": this.wsBeforeColon + ":") +
         (this.shorthand && !ap ? "" : unparseChild(this)(this.value)) + this.wsAfter;
     }
-    constructor(kind: "init" | "get" | "set", key: PropertyKey, wsBeforeGetSet: string, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
+    constructor(kind: "init" | "get" | "set", key: PropertyKey, wsBeforeGetSet: string, wsBeforeOpening: string, wsBeforeClosing: string, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
         this.type = Syntax.Property;
         this.key = key;
         this.computed = computed;
@@ -1480,6 +1488,8 @@ export class Property {
         this.kind = kind;
         this.method = method;
         this.shorthand = shorthand;
+        this.wsBeforeOpening = wsBeforeOpening;
+        this.wsBeforeClosing = wsBeforeClosing;
         this.wsBeforeGetSet = wsBeforeGetSet;
         this.wsBeforeColon = wsBeforeColon;
     }

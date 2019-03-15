@@ -93,6 +93,12 @@ interface NamedImports {
   separators: string[],
   wsBeforeClosing: string
 }
+interface ObjectPropertyKey {
+  key: Node.PropertyKey,
+  computed: boolean,
+  wsBeforeOpening: string,
+  wsBeforeClosing: string
+}
 
 export class Parser {
     readonly config: Config;
@@ -839,11 +845,14 @@ export class Parser {
         return this.finalize(node, new Node.AsyncFunctionExpression(wsBeforeAsync, "", null, params.wsBeforeOpening, params.params, params.separators, params.wsBeforeClosing, method));
     }
 
-    parseObjectPropertyKey(): Node.PropertyKey {
+    parseObjectPropertyKey(): ObjectPropertyKey {
         const node = this.createNode();
         const token = this.nextToken();
 
         let key: Node.PropertyKey;
+        var wsBeforeOpening = "";
+        var wsBeforeClosing = "";
+        var computed = false;
         switch (token.type) {
             case Token.StringLiteral:
             case Token.NumericLiteral:
@@ -863,8 +872,10 @@ export class Parser {
 
             case Token.Punctuator:
                 if (token.value === '[') {
+                    wsBeforeOpening = token.wsBefore;
                     key = this.isolateCoverGrammar(this.parseAssignmentExpression);
-                    this.expect(']');
+                    wsBeforeClosing = this.expect(']');
+                    computed = true;
                 } else {
                     key = this.throwUnexpectedToken(token);
                 }
@@ -874,7 +885,7 @@ export class Parser {
                 key = this.throwUnexpectedToken(token);
         }
 
-        return key;
+        return {key,wsBeforeOpening,wsBeforeClosing,computed};
     }
 
     isPropertyKey(key, value) {
@@ -898,20 +909,31 @@ export class Parser {
         var wsBeforeStar = "";
         var wsBeforeColon = "";
         var wsBeforeGetSet = "";
+        var wsBeforeOpening = "";
+        var wsBeforeClosing = "";
+        let objectPropertyKey: ObjectPropertyKey;
 
         if (token.type === Token.Identifier) {
             const id = token.value;
             this.nextToken();
-            computed = this.match('[');
+            //computed = this.match('['); // Not necessary anymore
             isAsync = !this.hasLineTerminator && (id === 'async') &&
                 !this.match(':') && !this.match('(') && !this.match('*') && !this.match(',');
             wsBeforeAsync = isAsync ? token.wsBefore : "";
-            key = isAsync ? this.parseObjectPropertyKey() : this.finalize(node, new Node.Identifier(token.wsBefore, id));
+            objectPropertyKey = isAsync ? this.parseObjectPropertyKey() : {computed: false, wsBeforeOpening: "", wsBeforeClosing: "", key: this.finalize(node, new Node.Identifier(token.wsBefore, id))};
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
         } else if (this.match('*')) {
             wsBeforeStar = this.nextToken().wsBefore;
         } else {
             computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
         }
 
         const lookaheadPropertyKey = this.qualifiedPropertyName(this.lookahead);
@@ -919,21 +941,33 @@ export class Parser {
             kind = 'get';
             wsBeforeGetSet = token.wsBefore;
             computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
             this.context.allowYield = false;
             value = this.parseGetterMethod();
 
         } else if (token.type === Token.Identifier && !isAsync && token.value === 'set' && lookaheadPropertyKey) {
             kind = 'set';
             wsBeforeGetSet = token.wsBefore;
-            computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            //computed = this.match('['); // Not necessary anymore
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
             value = this.parseSetterMethod();
 
         } else if (token.type === Token.Punctuator && token.value === '*' && lookaheadPropertyKey) {
             kind = 'init';
-            computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            //computed = this.match('['); // Not necessary anymore
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
             value = this.parseGeneratorMethod(wsBeforeStar);
             method = true;
 
@@ -976,7 +1010,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.Property(kind, key as Node.PropertyKey, wsBeforeGetSet, wsBeforeColon, computed, value, method, shorthand));
+        return this.finalize(node, new Node.Property(kind, key as Node.PropertyKey, wsBeforeGetSet, wsBeforeOpening, wsBeforeClosing, wsBeforeColon, computed, value, method, shorthand));
     }
 
     parseObjectInitializer(): Node.ObjectExpression {
@@ -2112,7 +2146,10 @@ export class Parser {
 
         let key: Node.PropertyKey | null;
         let value: Node.PropertyValue;
+        var wsBeforeOpening: string = "";
+        var wsBeforeClosing: string = "";
         var wsBeforeColon: string = "";
+        let objectPropertyKey: ObjectPropertyKey;
 
         if (this.lookahead.type === Token.Identifier) {
             const keyToken = this.lookahead;
@@ -2133,13 +2170,17 @@ export class Parser {
                 value = this.parsePatternWithDefault(params, kind);
             }
         } else {
-            computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            // computed = this.match('['); // Not necessary anymore
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
             wsBeforeColon = this.expect(':');
             value = this.parsePatternWithDefault(params, kind);
         }
 
-        return this.finalize(node, new Node.Property('init', key, "", wsBeforeColon, computed, value, method, shorthand));
+        return this.finalize(node, new Node.Property('init', key, "", wsBeforeOpening, wsBeforeClosing, wsBeforeColon, computed, value, method, shorthand));
     }
 
     parseRestProperty(params, kind): Node.RestElement {
@@ -3404,11 +3445,18 @@ export class Parser {
         var wsBeforeStar = "";
         var wsBeforeAsync = "";
         var wsBeforeStatic = "";
+        var wsBeforeOpening = "";
+        var wsBeforeClosing = "";
+        let objectPropertyKey: ObjectPropertyKey;
         if (this.match('*')) {
             wsBeforeStar = this.nextToken().wsBefore;
         } else {
-            computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            // computed = this.match('['); // Not necessary anymore
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
             const id = key as Node.Identifier;
             if (id.name === 'static' && (this.qualifiedPropertyName(this.lookahead) || this.match('*'))) {
                 wsBeforeStatic = id.wsBefore;
@@ -3418,7 +3466,12 @@ export class Parser {
                 if (this.match('*')) {
                     wsBeforeStar = this.nextToken().wsBefore;
                 } else {
-                    key = this.parseObjectPropertyKey();
+                    // computed = this.match('['); // Not necessary anymore
+                    objectPropertyKey = this.parseObjectPropertyKey();
+                    key = objectPropertyKey.key;
+                    wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+                    wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+                    computed = objectPropertyKey.computed;
                 }
             }
             if ((token.type === Token.Identifier) && !this.hasLineTerminator && (token.value === 'async')) {
@@ -3427,7 +3480,11 @@ export class Parser {
                     isAsync = true;
                     token = this.lookahead;
                     wsBeforeAsync = token.wsBefore;
-                    key = this.parseObjectPropertyKey();
+                    objectPropertyKey = this.parseObjectPropertyKey();
+                    key = objectPropertyKey.key;
+                    wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+                    wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+                    computed = objectPropertyKey.computed;
                     if (token.type === Token.Identifier && token.value === 'constructor') {
                         this.tolerateUnexpectedToken(token, Messages.ConstructorIsAsync);
                     }
@@ -3439,20 +3496,32 @@ export class Parser {
         if (token.type === Token.Identifier) {
             if (token.value === 'get' && lookaheadPropertyKey) {
                 kind = 'get';
-                computed = this.match('[');
-                key = this.parseObjectPropertyKey();
+                // computed = this.match('['); // Not necessary anymore
+                objectPropertyKey = this.parseObjectPropertyKey();
+                key = objectPropertyKey.key;
+                wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+                wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+                computed = objectPropertyKey.computed;
                 this.context.allowYield = false;
                 value = this.parseGetterMethod();
             } else if (token.value === 'set' && lookaheadPropertyKey) {
                 kind = 'set';
-                computed = this.match('[');
-                key = this.parseObjectPropertyKey();
+                // computed = this.match('['); // Not necessary anymore
+                objectPropertyKey = this.parseObjectPropertyKey();
+                key = objectPropertyKey.key;
+                wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+                wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+                computed = objectPropertyKey.computed;
                 value = this.parseSetterMethod();
             }
         } else if (token.type === Token.Punctuator && token.value === '*' && lookaheadPropertyKey) {
             kind = 'init';
-            computed = this.match('[');
-            key = this.parseObjectPropertyKey();
+            // computed = this.match('['); // Not necessary anymore
+            objectPropertyKey = this.parseObjectPropertyKey();
+            key = objectPropertyKey.key;
+            wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
+            wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
+            computed = objectPropertyKey.computed;
             value = this.parseGeneratorMethod(wsBeforeStar);
             method = true;
         }
@@ -3488,7 +3557,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.MethodDefinition(wsBeforeStatic, key as Node.Expression, computed, value, kind, isStatic));
+        return this.finalize(node, new Node.MethodDefinition(wsBeforeStatic, key as Node.Expression, computed, wsBeforeOpening, wsBeforeClosing, value, kind, isStatic));
     }
 
     parseClassElementList(): ClassElementList {
