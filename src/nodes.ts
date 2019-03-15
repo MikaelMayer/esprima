@@ -437,10 +437,10 @@ export class CallExpression {
       return this.wsBefore +
         unparseChild(this)(this.callee) +
         this.wsBeforeArgs +
-        (this.callee.type == Syntax.Import ? "" : "(") +
+        "(" +
         unparseChildren(this, this.separators, ", ")(this.arguments) +
         this.wsBeforeEndArgs +
-        (this.callee.type == Syntax.Import ? "" : ")") +
+        ")" +
         this.wsAfter;
     }
     constructor(callee: Expression | Import, wsBeforeArgs: string, args: ArgumentListElement[], separators: string[], wsBeforeEndArgs: string) {
