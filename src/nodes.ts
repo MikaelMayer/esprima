@@ -255,7 +255,7 @@ var functionDeclarationUnparser = function(this: AnyFunctionExpression, parent) 
   var isFunctionMethod = parent && (parent.type == Syntax.Property && (parent.method || parent.kind == "get" || parent.kind == "set") || parent.type == Syntax.MethodDefinition);
   return this.wsBefore +
     (isFunctionMethod ? "" :
-    this.async && this.wsBeforeAsync ? this.wsBeforeAsync + "async" : "") +
+    this.async ? this.wsBeforeAsync + "async" : "") +
     this.wsBeforeFunction +
     (isFunctionMethod ? "" : "function" + 
       (this.generator ? this.wsBeforeStar + "*" : "")
@@ -1468,7 +1468,7 @@ export class Property {
           (this.value.generator ? this.value.wsBeforeStar + "*" : "") : ""
       : "") +
         (this.kind == "get" || this.kind == "set" ? this.wsBeforeGetSet + this.kind : "") +
-        (ap ? "" : unparseChild(this)(this.key)) +
+        (!this.shorthand || (this.value && !ap) ? unparseChild(this)(this.key) : "") +
         (this.method || this.shorthand || this.kind == "get" || this.kind == "set" ? "": this.wsBeforeColon + ":") +
         (this.shorthand && !ap ? "" : unparseChild(this)(this.value)) + this.wsAfter;
     }
