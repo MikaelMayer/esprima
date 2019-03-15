@@ -730,7 +730,8 @@ export class Parser {
                 if (!this.context.strict && this.context.allowYield && this.matchKeyword('yield')) {
                     expr = this.parseIdentifierName();
                 } else if (!this.context.strict && this.matchKeyword('let')) {
-                    expr = this.finalize(node, new Node.Identifier(this.lookahead.wsBefore, this.nextToken().value));
+                    var letToken = this.nextToken();
+                    expr = this.finalize(node, new Node.Identifier(letToken.wsBefore, letToken.value));
                 } else {
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
@@ -2504,20 +2505,21 @@ export class Parser {
 
                     if (declarations.length === 1 && declarations[0].init === null && this.matchKeyword('in')) {
                         init = this.finalize(init, new Node.VariableDeclaration(kindToken.wsBefore, declarations, separators, kind, ""));
-                        this.nextToken();
+                        wsBeforeKeyword = this.nextToken().wsBefore;
                         left = init;
                         right = this.parseExpression();
                         init = null;
                     } else if (declarations.length === 1 && declarations[0].init === null && this.matchContextualKeyword('of')) {
                         init = this.finalize(init, new Node.VariableDeclaration(kindToken.wsBefore, declarations, separators, kind, ""));
-                        this.nextToken();
+                        wsBeforeKeyword = this.nextToken().wsBefore;
                         left = init;
                         right = this.parseAssignmentExpression();
                         init = null;
                         forIn = false;
                     } else {
-                        var semicolon = this.consumeSemicolon();
-                        init = this.finalize(init, new Node.VariableDeclaration(kindToken.wsBefore, declarations, separators, kind, semicolon));
+                        wsBeforeSemicolon1 = this.consumeSemicolon();
+                        wsBeforeSemicolon1 = wsBeforeSemicolon1.substring(0, wsBeforeSemicolon1.length - 2);
+                        init = this.finalize(init, new Node.VariableDeclaration(kindToken.wsBefore, declarations, separators, kind, ""));
                     }
                 }
             } else {
