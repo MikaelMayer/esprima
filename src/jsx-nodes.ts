@@ -27,10 +27,10 @@ export class JSXClosingElement {
 
 export class JSXElement {
     readonly type: string;
-    wsBefore: string = "";
     readonly openingElement: JSXOpeningElement;
     readonly children: JSXChild[];
     readonly closingElement: JSXClosingElement | null;
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore + Node.unparseChild(this)(this.openingElement) +
@@ -38,23 +38,25 @@ export class JSXElement {
        (this.closingElement ? Node.unparseChild(this)(this.closingElement) : "") +
        this.wsAfter;        
     }
-    constructor(openingElement: JSXOpeningElement, children: JSXChild[], closingElement: JSXClosingElement | null) {
+    constructor(wsBefore: string, openingElement: JSXOpeningElement, children: JSXChild[], closingElement: JSXClosingElement | null) {
         this.type = JSXSyntax.JSXElement;
         this.openingElement = openingElement;
         this.children = children;
         this.closingElement = closingElement;
+        this.wsBefore = wsBefore;
     }
 }
 
 export class JSXEmptyExpression {
-    readonly type: string
-    wsBefore: string = "";
+    readonly type: string;
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore + this.wsAfter;
     }
-    constructor() {
+    constructor(wsBefore: string) {
         this.type = JSXSyntax.JSXEmptyExpression;
+        this.wsBefore = wsBefore;
     }
 }
 
@@ -62,14 +64,15 @@ export class JSXExpressionContainer {
     readonly type: string;
     readonly expression: Node.Expression | JSXEmptyExpression;
     readonly wsBeforeClosing: string;
-    wsBefore: string = "";
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore + "{" + Node.unparseChild(this)(this.expression) + this.wsBeforeClosing + "}" + this.wsAfter;
     }
-    constructor(expression: Node.Expression | JSXEmptyExpression, wsBeforeClosing: string) {
+    constructor(wsBefore: string, expression: Node.Expression | JSXEmptyExpression, wsBeforeClosing: string) {
         this.type = JSXSyntax.JSXExpressionContainer;
         this.expression = expression;
+        this.wsBefore = wsBefore;
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }
@@ -77,13 +80,14 @@ export class JSXExpressionContainer {
 export class JSXIdentifier {
     readonly type: string;
     readonly name: string;
-    wsBefore: string = "";
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore + this.name + this.wsAfter;
     }
-    constructor(name: string) {
+    constructor(wsBefore: string, name: string) {
         this.type = JSXSyntax.JSXIdentifier;
+        this.wsBefore = wsBefore;
         this.name = name;
     }
 }
@@ -112,17 +116,18 @@ export class JSXAttribute {
     readonly name: JSXAttributeName;
     readonly wsBeforeEq: string;
     readonly value: JSXAttributeValue | null;
-    wsBefore: string = "";
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore +
         Node.unparseChild(this)(this.name) + this.wsBeforeEq + (this.value ? "=" + Node.unparseChild(this)(this.value): "") +
         this.wsAfter;
     }
-    constructor(name: JSXAttributeName, wsBeforeEq: string, value: JSXAttributeValue | null) {
+    constructor(wsBefore: string, name: JSXAttributeName, wsBeforeEq: string, value: JSXAttributeValue | null) {
         this.type = JSXSyntax.JSXAttribute;
         this.name = name;
         this.value = value;
+        this.wsBefore = wsBefore;
         this.wsBeforeEq = wsBeforeEq;
     }
 }
@@ -150,7 +155,7 @@ export class JSXOpeningElement {
     readonly selfClosing: boolean;
     readonly attributes: JSXElementAttribute[];
     readonly wsBeforeEnd: string;
-    wsBefore: string = "";
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore +
@@ -159,11 +164,12 @@ export class JSXOpeningElement {
         this.wsBeforeEnd + (this.selfClosing ? "/" : "") + ">" +
         this.wsAfter;
     }
-    constructor(name: JSXElementName, selfClosing: boolean, attributes: JSXElementAttribute[], wsBeforeEnd: string) {
+    constructor(wsBefore: string, name: JSXElementName, selfClosing: boolean, attributes: JSXElementAttribute[], wsBeforeEnd: string) {
         this.type = JSXSyntax.JSXOpeningElement;
         this.name = name;
         this.selfClosing = selfClosing;
         this.attributes = attributes;
+        this.wsBefore = wsBefore;
         this.wsBeforeEnd = wsBeforeEnd;
     }
 }
@@ -172,14 +178,15 @@ export class JSXSpreadAttribute {
     readonly type: string;
     readonly argument: Node.Expression;
     readonly wsBeforeClosing: string;
-    wsBefore: string = "";
+    readonly wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore + "{..." + Node.unparseChild(this)(this.argument) + this.wsBeforeClosing + "}" + this.wsAfter;
     }
-    constructor(argument: Node.Expression, wsBeforeClosing: string) {
+    constructor(wsBefore: string, argument: Node.Expression, wsBeforeClosing: string) {
         this.type = JSXSyntax.JSXSpreadAttribute;
         this.argument = argument;
+        this.wsBefore = wsBefore;
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }
