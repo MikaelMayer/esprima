@@ -684,6 +684,7 @@ export class DoWhileStatement {
     readonly wsBeforeWhile: string; 
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     readonly semicolon: string;
     wsAfter: string = "";
     unparse() {
@@ -696,10 +697,10 @@ export class DoWhileStatement {
        "(" +
        unparseChild(this)(this.test) +
        this.wsBeforeClosing +
-       ")" + this.semicolon +
+       this.closingParens + this.semicolon +
        this.wsAfter;
     }
-    constructor(wsBefore: string, body: Statement, wsBeforeWhile: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string, semicolon: string) {
+    constructor(wsBefore: string, body: Statement, wsBeforeWhile: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string, closingParens: string, semicolon: string) {
         this.type = Syntax.DoWhileStatement;
         this.body = body;
         this.test = test;
@@ -707,6 +708,7 @@ export class DoWhileStatement {
         this.wsBeforeWhile = wsBeforeWhile;
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
+        this.closingParens = closingParens;
         this.semicolon = semicolon;
     }
 }
@@ -870,7 +872,7 @@ var forCollectionUnparser = function(this: ForInStatement | ForOfStatement, pare
     unparseChild(this)(this.left) +
     this.wsBeforeKeyword + keyword +
     unparseChild(this)(this.right) +
-    this.wsBeforeClosing + ")" +
+    this.wsBeforeClosing + this.closingParens +
     unparseChild(this)(this.body) +
     this.wsAfter;
 }
@@ -885,12 +887,13 @@ export class ForInStatement {
     readonly wsBeforeOpening: string;
     readonly wsBeforeKeyword: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return forCollectionUnparser.bind(this)(parent, "in");
     }
     constructor(wsBeforeFor: string, wsBeforeOpening: string,
-      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, body: Statement) {
+      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, closingParens: string, body: Statement) {
         this.type = Syntax.ForInStatement;
         this.left = left;
         this.right = right;
@@ -900,6 +903,7 @@ export class ForInStatement {
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeKeyword = wsBeforeKeyword;
         this.wsBeforeClosing = wsBeforeClosing;
+        this.closingParens = closingParens;
     }
 }
 
@@ -913,12 +917,13 @@ export class ForOfStatement {
     readonly wsBeforeOpening: string;
     readonly wsBeforeKeyword: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return forCollectionUnparser.bind(this)(parent, "of");
     }
     constructor(wsBeforeFor: string, wsBeforeOpening: string,
-      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, body: Statement) {
+      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, closingParens: string, body: Statement) {
         this.type = Syntax.ForOfStatement;
         this.left = left;
         this.right = right;
@@ -927,6 +932,7 @@ export class ForOfStatement {
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeKeyword = wsBeforeKeyword;
         this.wsBeforeClosing = wsBeforeClosing;
+        this.closingParens = closingParens;
     }
 }
 
@@ -942,6 +948,7 @@ export class ForStatement {
     readonly wsBeforeSemicolon1: string;
     readonly wsBeforeSemicolon2: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
@@ -951,11 +958,11 @@ export class ForStatement {
         unparseChild(this)(this.test) +
         this.wsBeforeSemicolon2 + ";" +
         unparseChild(this)(this.update) +
-        this.wsBeforeClosing + ")" +
+        this.wsBeforeClosing + this.closingParens +
         unparseChild(this)(this.body) +
         this.wsAfter;
     }
-    constructor(wsBeforeFor: string, wsBeforeOpening: string, init: Expression | null, wsBeforeSemicolon1: string, test: Expression | null, wsBeforeSemicolon2: string, update: Expression | null, wsBeforeClosing: string, body: Statement) {
+    constructor(wsBeforeFor: string, wsBeforeOpening: string, init: Expression | null, wsBeforeSemicolon1: string, test: Expression | null, wsBeforeSemicolon2: string, update: Expression | null, wsBeforeClosing: string, closingParens: string, body: Statement) {
         this.type = Syntax.ForStatement;
         this.init = init;
         this.test = test;
@@ -966,6 +973,7 @@ export class ForStatement {
         this.wsBeforeSemicolon1 = wsBeforeSemicolon1;
         this.wsBeforeSemicolon2 = wsBeforeSemicolon2;
         this.wsBeforeClosing = wsBeforeClosing;
+        this.closingParens = closingParens;
     }
 }
 
@@ -1963,19 +1971,21 @@ export class WithStatement {
     wsBefore: string;
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return this.wsBefore + "with" + this.wsBeforeOpening + "(" +
-        unparseChild(this)(this.object) + this.wsBeforeClosing + ")" +
+        unparseChild(this)(this.object) + this.wsBeforeClosing + this.closingParens +
         unparseChild(this)(this.body) +
         this.wsAfter;
     }
-    constructor(wsBefore: string, wsBeforeOpening: string, object: Expression, wsBeforeClosing: string, body: Statement) {
+    constructor(wsBefore: string, wsBeforeOpening: string, object: Expression, wsBeforeClosing: string, closingParens: string, body: Statement) {
         this.type = Syntax.WithStatement;
         this.object = object;
         this.body = body;
         this.wsBefore = wsBefore;
         this.wsBeforeOpening = wsBeforeOpening;
+        this.closingParens = closingParens;
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }

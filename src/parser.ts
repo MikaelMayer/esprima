@@ -2394,8 +2394,12 @@ export class Parser {
         const test = this.parseExpression();
         var semicolon = "";
         var wsBeforeClosing = "";
+        var closingParens = ")";
         if (!this.match(')') && this.config.tolerant) {
-            this.tolerateUnexpectedToken(this.nextToken());
+            var unexpectedToken = this.nextToken();
+            wsBeforeClosing = unexpectedToken.wsBefore;
+            closingParens = this.getTokenRaw(unexpectedToken);
+            this.tolerateUnexpectedToken(unexpectedToken);
         } else {
             wsBeforeClosing = this.expect(')');
             if (this.match(';')) {
@@ -2404,7 +2408,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.DoWhileStatement(wsBeforeDo, body, wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, semicolon));
+        return this.finalize(node, new Node.DoWhileStatement(wsBeforeDo, body, wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, closingParens, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-while-statement
@@ -2578,10 +2582,13 @@ export class Parser {
 
         let body;
         var wsBeforeClosing = "";
+        var closingParens = ")";
         if (!this.match(')') && this.config.tolerant) {
             var unexpectedToken = this.nextToken();
+            wsBeforeClosing = unexpectedToken.wsBefore;
+            closingParens = this.getTokenRaw(unexpectedToken);
             this.tolerateUnexpectedToken(unexpectedToken);
-            body = this.finalize(this.createNode(), new Node.EmptyStatement(unexpectedToken.wsBefore, this.getTokenRaw(unexpectedToken)));
+            body = this.finalize(this.createNode(), new Node.EmptyStatement("", ""));
         } else {
             wsBeforeClosing = this.expect(')');
 
@@ -2592,9 +2599,9 @@ export class Parser {
         }
 
         return (typeof left === 'undefined') ?
-            this.finalize(node, new Node.ForStatement(wsBeforeFor, wsBeforeOpening, init, wsBeforeSemicolon1, test, wsBeforeSemicolon2, update, wsBeforeClosing, body)) :
-            forIn ? this.finalize(node, new Node.ForInStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, body)) :
-                this.finalize(node, new Node.ForOfStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, body));
+            this.finalize(node, new Node.ForStatement(wsBeforeFor, wsBeforeOpening, init, wsBeforeSemicolon1, test, wsBeforeSemicolon2, update, wsBeforeClosing, closingParens, body)) :
+            forIn ? this.finalize(node, new Node.ForInStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, closingParens, body)) :
+                this.finalize(node, new Node.ForOfStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, closingParens, body));
     }
 
     // https://tc39.github.io/ecma262/#sec-continue-statement
@@ -2682,16 +2689,19 @@ export class Parser {
         const wsBeforeOpening = this.expect('(');
         const object = this.parseExpression();
         var wsBeforeClosing = "";
+        var closingParens = ")";
         if (!this.match(')') && this.config.tolerant) {
             var unexpectedToken = this.nextToken();
+            wsBeforeClosing = unexpectedToken.wsBefore;
+            closingParens = this.getTokenRaw(unexpectedToken);
             this.tolerateUnexpectedToken(unexpectedToken);
-            body = this.finalize(this.createNode(), new Node.EmptyStatement(unexpectedToken.wsBefore, this.getTokenRaw(unexpectedToken)));
+            body = this.finalize(this.createNode(), new Node.EmptyStatement("", ""));
         } else {
             wsBeforeClosing = this.expect(')');
             body = this.parseStatement();
         }
 
-        return this.finalize(node, new Node.WithStatement(wsBeforeWith, wsBeforeOpening, object, wsBeforeClosing, body));
+        return this.finalize(node, new Node.WithStatement(wsBeforeWith, wsBeforeOpening, object, wsBeforeClosing, closingParens, body));
     }
 
     // https://tc39.github.io/ecma262/#sec-switch-statement
