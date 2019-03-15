@@ -128,10 +128,10 @@ export class Tokenizer {
 
     getNextToken(): BufferEntry | undefined {
         if (this.buffer.length === 0) {
-            var wsStart = this.scanner.index;
+            let wsStart = this.scanner.index;
             const comments: Comment[] = this.scanner.scanComments();
-            var tokenStart = this.scanner.index;
-            var ws = tokenStart == wsStart ? "" : this.scanner.source.substring(wsStart, tokenStart);
+            let tokenStart = this.scanner.index;
+            let ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
             if (this.scanner.trackComment) {
                 for (let i = 0; i < comments.length; ++i) {
                     const e: Comment = comments[i];

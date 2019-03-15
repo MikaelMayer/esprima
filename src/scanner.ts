@@ -32,7 +32,7 @@ export interface Comment {
 
 export interface RawToken {
     type: Token;
-    wsBefore: string,
+    wsBefore: string;
     value: string | number;
     pattern?: string;
     flags?: string;
