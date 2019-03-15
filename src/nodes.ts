@@ -1445,6 +1445,9 @@ export class ObjectPattern {
 function isFunctionExpression(e: any): e is AnyFunctionExpression {
    return e.type === Syntax.FunctionExpression;
 }
+function isAssignmentPattern(e: any): e is AssignmentPattern {
+  return e.type === Syntax.AssignmentPattern;
+}
 export class Property {
     readonly type: string;
     readonly key: PropertyKey;
@@ -1458,15 +1461,16 @@ export class Property {
     readonly wsBeforeColon: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
+      var ap = this.value && isAssignmentPattern(this.value)
       return this.wsBefore + (this.method && this.value ? 
         isFunctionExpression(this.value) ?
           (this.value.async ? this.value.wsBeforeAsync + "async" : "") +
           (this.value.generator ? this.value.wsBeforeStar + "*" : "") : ""
       : "") +
         (this.kind == "get" || this.kind == "set" ? this.wsBeforeGetSet + this.kind : "") +
-        unparseChild(this)(this.key) +
+        (ap ? "" : unparseChild(this)(this.key)) +
         (this.method || this.shorthand || this.kind == "get" || this.kind == "set" ? "": this.wsBeforeColon + ":") +
-        (this.shorthand ? "" : unparseChild(this)(this.value)) + this.wsAfter;
+        (this.shorthand && !ap ? "" : unparseChild(this)(this.value)) + this.wsAfter;
     }
     constructor(kind: "init" | "get" | "set", key: PropertyKey, wsBeforeGetSet: string, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
         this.type = Syntax.Property;
