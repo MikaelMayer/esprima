@@ -97,10 +97,10 @@ export class JSXParser extends Parser {
     }
 
     createJSXNode(): WSNode {
-        let wsStart = this.scanner.index;
+        const wsStart = this.scanner.index;
         this.collectComments();
-        let tokenStart = this.scanner.index;
-        let wsBefore = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const tokenStart = this.scanner.index;
+        const wsBefore = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
 
         return {wsBefore, node: {
             index: this.scanner.index,
@@ -279,10 +279,10 @@ export class JSXParser extends Parser {
     }
 
     nextJSXToken(): RawJSXToken {
-        let wsStart = this.scanner.index;
+        const wsStart = this.scanner.index;
         this.collectComments();
-        let tokenStart = this.scanner.index;
-        let ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const tokenStart = this.scanner.index;
+        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
 
         this.startMarker.index = this.scanner.index;
         this.startMarker.line = this.scanner.lineNumber;
@@ -347,10 +347,10 @@ export class JSXParser extends Parser {
 
     peekJSXToken(): RawJSXToken {
         const state = this.scanner.saveState();
-        let wsStart = this.scanner.index;
+        const wsStart = this.scanner.index;
         this.scanner.scanComments();
-        let tokenStart = this.scanner.index;
-        let ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const tokenStart = this.scanner.index;
+        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
         const next = this.lexJSX(ws);
         this.scanner.restoreState(state);
 
@@ -500,7 +500,7 @@ export class JSXParser extends Parser {
         if (selfClosing) {
             wsBeforeEnd = this.expectJSX('/');
         }
-        let wsBeforeGt = this.expectJSX('>');
+        const wsBeforeGt = this.expectJSX('>');
 
         return this.finalize(wsNode.node, new JSXNode.JSXOpeningElement(wsBefore, name, selfClosing, attributes, wsBeforeEnd, wsBeforeGt));
     }
@@ -523,17 +523,17 @@ export class JSXParser extends Parser {
         if (selfClosing) {
             wsBeforeEnd = this.expectJSX('/');
         }
-        let wsBeforeGt = this.expectJSX('>');
+        const wsBeforeGt = this.expectJSX('>');
 
         return this.finalize(wsNode.node, new JSXNode.JSXOpeningElement(wsBefore, name, selfClosing, attributes, wsBeforeEnd, wsBeforeGt));
     }
 
     parseJSXEmptyExpression(): JSXNode.JSXEmptyExpression {
         const node = this.createJSXChildNode();
-        let wsStart = this.scanner.index;
+        const wsStart = this.scanner.index;
         this.collectComments();
-        let tokenStart = this.scanner.index;
-        let ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const tokenStart = this.scanner.index;
+        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
         this.lastMarker.index = this.scanner.index;
         this.lastMarker.line = this.scanner.lineNumber;
         this.lastMarker.column = this.scanner.index - this.scanner.lineStart;
@@ -636,7 +636,7 @@ export class JSXParser extends Parser {
 
     parseJSXRoot(): JSXNode.JSXElement {
         // Pop the opening '<' added from the lookahead.
-        let wsBefore = this.lookahead.wsBefore;
+        const wsBefore = this.lookahead.wsBefore;
         if (this.config.tokens) {
             this.tokens.pop();
         }

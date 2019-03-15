@@ -201,7 +201,7 @@ export class JSXText {
     wsBefore: string = '';
     wsAfter: string = '';
     unparse(parent?: Node.Unparsable): string {
-      return this.wsBefore + (this.value == this.originalValue ? this.raw : this.value) + this.wsAfter;
+      return this.wsBefore + (this.value === this.originalValue ? this.raw : this.value) + this.wsAfter;
     }
     constructor(value: string, raw: string) {
         this.type = JSXSyntax.JSXText;

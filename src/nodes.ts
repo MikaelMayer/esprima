@@ -37,7 +37,7 @@ export type UnparsableOrNull = Unparsable | null;
 export let unparseChildren = (parent: any = undefined,
                               join: string | string[] = '', defaultJoin = '') => (children: UnparsableOrNull[]) => {
   if (children) {
-    let renderedChildren = children.map((child) => child ? child.unparse(parent) : '');
+    const renderedChildren = children.map((child) => child ? child.unparse(parent) : '');
     if (typeof join == 'string') {
       return renderedChildren.join(join);
     }
@@ -114,7 +114,7 @@ export class ArrayPattern {
     }
 }
 
-let arrowFunctionUnparser = function(this: ArrowFunctionExpression | AsyncArrowFunctionExpression, parent) {
+const arrowFunctionUnparser = function(this: ArrowFunctionExpression | AsyncArrowFunctionExpression, parent) {
   return this.wsBefore +
     (this.async ? this.wsBeforeAsync + 'async' : '') +
     this.wsBeforeOpening +
@@ -251,8 +251,8 @@ export type AnyFunctionExpression = AsyncFunctionDeclaration | FunctionDeclarati
 AsyncFunctionExpression | FunctionExpression;
 // Context-sensitive unparsing definition.
 // If a method, the async and generator (*) are already managed, and the word "function" does not appear.
-let functionDeclarationUnparser = function(this: AnyFunctionExpression, parent) {
-  let isFunctionMethod = parent && (parent.type == Syntax.Property && (parent.method || parent.kind == 'get' || parent.kind == 'set') || parent.type == Syntax.MethodDefinition);
+const functionDeclarationUnparser = function(this: AnyFunctionExpression, parent) {
+  const isFunctionMethod = parent && (parent.type == Syntax.Property && (parent.method || parent.kind == 'get' || parent.kind == 'set') || parent.type == Syntax.MethodDefinition);
   return this.wsBefore +
     (isFunctionMethod ? '' :
     this.async ? this.wsBeforeAsync + 'async' : '') +
@@ -400,7 +400,7 @@ export class BlockStatement {
     }
 }
 
-let controlLabelStatementUnparseData = function(this: BreakStatement | ContinueStatement, parent, name) {
+const controlLabelStatementUnparseData = function(this: BreakStatement | ContinueStatement, parent, name) {
   return this.wsBefore +
     name +
     unparseChild(this)(this.label) +
@@ -507,7 +507,7 @@ export class ClassBody {
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }
-let classDeclarationUnparser = function(this: ClassDeclaration | ClassExpression, parent) {
+const classDeclarationUnparser = function(this: ClassDeclaration | ClassExpression, parent) {
   return this.wsBefore +
         'class' +
         unparseChild(this)(this.id) +
@@ -831,8 +831,8 @@ export class ExportSpecifier {
     readonly wsBeforeAs: string;
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
-      let localStr = unparseChild(this)(this.local);
-      let exportedStr = unparseChild(this)(this.exported);
+      const localStr = unparseChild(this)(this.local);
+      const exportedStr = unparseChild(this)(this.exported);
       return this.wsBefore +
         localStr +
         (this.noAs && localStr == exportedStr ?
@@ -866,7 +866,7 @@ export class ExpressionStatement {
         this.semicolon = semicolon;
     }
 }
-let forCollectionUnparser = function(this: ForInStatement | ForOfStatement, parent, keyword) {
+const forCollectionUnparser = function(this: ForInStatement | ForOfStatement, parent, keyword) {
   return this.wsBefore +
     this.wsBeforeFor + 'for' + this.wsBeforeOpening + '(' +
     unparseChild(this)(this.left) +
@@ -1136,7 +1136,7 @@ export class ImportDeclaration {
       }
       let insideImportSpecifiers = false;
       for (let i = 0; i < this.specifiers.length; i++) {
-        let specifier = this.specifiers[i];
+        const specifier = this.specifiers[i];
         if (specifier.type == Syntax.ImportSpecifier) {
           if (!insideImportSpecifiers) {
             result += this.wsBeforeOpening + '{';
@@ -1274,7 +1274,7 @@ function uneval(x: any): string {
     return 'null';
   }
   if (typeof x == 'object' && typeof x.length == 'number') { // Arrays
-    let result: string[] = [];
+    const result: string[] = [];
     x = x as any[];
     for (let i = 0; i < x.length; i++) {
       result.push(uneval(x[i]));
@@ -1282,8 +1282,8 @@ function uneval(x: any): string {
     return '[' + result.join(',') + ']';
   }
   if (typeof x == 'object') {
-    let result: string[] = [];
-    for (let k in x) {
+    const result: string[] = [];
+    for (const k in x) {
       result.push(k + ':' + uneval(x[k]));
     }
     return '{' + result.join(', ') + '}';
@@ -1291,7 +1291,7 @@ function uneval(x: any): string {
   return '' + x;
 }
 function toExpString(string, raw?) {
-  let charDelim = raw && raw.length >= 1 && (raw[0] == '"' || raw[0] == '`' || raw[0] == '\'') ? raw[0] : '"';
+  const charDelim = raw && raw.length >= 1 && (raw[0] == '"' || raw[0] == '`' || raw[0] == '\'') ? raw[0] : '"';
   return charDelim + unescapeCharSequence(string).replace(charDelim, '\\' + charDelim) + charDelim;
 }
 
@@ -1358,7 +1358,7 @@ export class MethodDefinition {
     readonly wsBeforeStatic: string;
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
-      let keyStr = unparseChild(this)(this.key);
+      const keyStr = unparseChild(this)(this.key);
       return this.wsBefore +
         (this.static ? this.wsBeforeStatic + 'static' : '') +
         (this.value && isFunctionExpression(this.value) ?
@@ -1435,7 +1435,7 @@ export class NewExpression {
         this.wsBeforeClosing = wsBeforeClosing;
     }
 }
-let objectExpressionPatternUnparse = function(this: ObjectExpression | ObjectPattern) {
+const objectExpressionPatternUnparse = function(this: ObjectExpression | ObjectPattern) {
   return this.wsBefore + '{' +
     unparseChildren(this, this.separators, ', ')(this.properties) +
     this.wsBeforeClosing + '}'  + this.wsAfter;
@@ -1498,7 +1498,7 @@ export class Property {
     readonly wsBeforeColon: string;
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
-      let ap = this.value && isAssignmentPattern(this.value);
+      const ap = this.value && isAssignmentPattern(this.value);
       return this.wsBefore + (this.method && this.value ?
         isFunctionExpression(this.value) ?
           (this.value.async ? this.value.wsBeforeAsync + 'async' : '') +
