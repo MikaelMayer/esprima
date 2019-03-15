@@ -3436,7 +3436,7 @@ export class Parser {
         let token = this.lookahead;
         const node = this.createNode();
 
-        let kind: string = '';
+        let kind: '' | 'init' | 'method' | 'constructor' | 'set' | 'get' = '';
         let key: Node.PropertyKey | null = null;
         let value: Node.FunctionExpression | null = null;
         let computed = false;
@@ -3449,6 +3449,7 @@ export class Parser {
         var wsBeforeStatic = "";
         var wsBeforeOpening = "";
         var wsBeforeClosing = "";
+        var wsBeforeGetSet = "";
         let objectPropertyKey: ObjectPropertyKey;
         if (this.match('*')) {
             wsBeforeStar = this.nextToken().wsBefore;
@@ -3498,6 +3499,7 @@ export class Parser {
         if (token.type === Token.Identifier) {
             if (token.value === 'get' && lookaheadPropertyKey) {
                 kind = 'get';
+                wsBeforeGetSet = token.wsBefore;
                 // computed = this.match('['); // Not necessary anymore
                 objectPropertyKey = this.parseObjectPropertyKey();
                 key = objectPropertyKey.key;
@@ -3508,6 +3510,7 @@ export class Parser {
                 value = this.parseGetterMethod();
             } else if (token.value === 'set' && lookaheadPropertyKey) {
                 kind = 'set';
+                wsBeforeGetSet = token.wsBefore;
                 // computed = this.match('['); // Not necessary anymore
                 objectPropertyKey = this.parseObjectPropertyKey();
                 key = objectPropertyKey.key;
@@ -3559,7 +3562,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.MethodDefinition(wsBeforeStatic, key as Node.Expression, computed, wsBeforeOpening, wsBeforeClosing, value, kind, isStatic));
+        return this.finalize(node, new Node.MethodDefinition(wsBeforeStatic, wsBeforeGetSet, key as Node.Expression, computed, wsBeforeOpening, wsBeforeClosing, value, kind as 'init' | 'method' | 'constructor' | 'set' | 'get', isStatic));
     }
 
     parseClassElementList(): ClassElementList {

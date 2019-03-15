@@ -1324,9 +1324,10 @@ export class MethodDefinition {
     readonly key: Expression;
     readonly computed: boolean;
     readonly value: AsyncFunctionExpression | FunctionExpression | null;
-    readonly kind: string;
+    readonly kind: 'init' | 'method' | 'constructor' | 'set' | 'get';
     readonly static: boolean;
     wsBefore: string = "";
+    readonly wsBeforeGetSet: string;
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
     readonly wsBeforeStatic: string;
@@ -1338,19 +1339,21 @@ export class MethodDefinition {
         (this.value && isFunctionExpression(this.value) ?
           (this.value.async ? this.value.wsBeforeAsync + "async" : "") +
           (this.value.generator ? this.value.wsBeforeStar + "*" : "") : "") +
+        (this.kind == 'set' || this.kind == 'get' ? this.wsBeforeGetSet + this.kind : "") +
         (this.computed ? this.wsBeforeOpening + "[" : "") +
         keyStr +
         (this.computed ? this.wsBeforeClosing + "]" : "") +
         unparseChild(this)(this.value) +
         this.wsAfter;
     }
-    constructor(wsBeforeStatic: string, key: Expression, computed: boolean, wsBeforeOpening: string, wsBeforeClosing: string, value: AsyncFunctionExpression | FunctionExpression | null, kind: string, isStatic: boolean) {
+    constructor(wsBeforeStatic: string, wsBeforeGetSet, key: Expression, computed: boolean, wsBeforeOpening: string, wsBeforeClosing: string, value: AsyncFunctionExpression | FunctionExpression | null, kind: 'init' | 'method' | 'constructor' | 'set' | 'get', isStatic: boolean) {
         this.type = Syntax.MethodDefinition;
         this.key = key;
         this.computed = computed;
         this.value = value;
         this.kind = kind;
         this.static = isStatic;
+        this.wsBeforeGetSet = wsBeforeGetSet;
         this.wsBeforeStatic = wsBeforeStatic;
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
