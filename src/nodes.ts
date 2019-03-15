@@ -700,7 +700,7 @@ export class DoWhileStatement {
        this.closingParens + this.semicolon +
        this.wsAfter;
     }
-    constructor(wsBefore: string, body: Statement, wsBeforeWhile: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string, closingParens: string, semicolon: string) {
+    constructor(wsBefore: string, body: Statement, wsBeforeWhile: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string, semicolon: string, closingParens: string = ")") {
         this.type = Syntax.DoWhileStatement;
         this.body = body;
         this.test = test;
@@ -893,7 +893,7 @@ export class ForInStatement {
       return forCollectionUnparser.bind(this)(parent, "in");
     }
     constructor(wsBeforeFor: string, wsBeforeOpening: string,
-      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, closingParens: string, body: Statement) {
+      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, body: Statement, closingParens: string = ")") {
         this.type = Syntax.ForInStatement;
         this.left = left;
         this.right = right;
@@ -923,7 +923,7 @@ export class ForOfStatement {
       return forCollectionUnparser.bind(this)(parent, "of");
     }
     constructor(wsBeforeFor: string, wsBeforeOpening: string,
-      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, closingParens: string, body: Statement) {
+      left: Expression, wsBeforeKeyword: string, right: Expression, wsBeforeClosing: string, body: Statement, closingParens: string = ")") {
         this.type = Syntax.ForOfStatement;
         this.left = left;
         this.right = right;
@@ -962,7 +962,7 @@ export class ForStatement {
         unparseChild(this)(this.body) +
         this.wsAfter;
     }
-    constructor(wsBeforeFor: string, wsBeforeOpening: string, init: Expression | null, wsBeforeSemicolon1: string, test: Expression | null, wsBeforeSemicolon2: string, update: Expression | null, wsBeforeClosing: string, closingParens: string, body: Statement) {
+    constructor(wsBeforeFor: string, wsBeforeOpening: string, init: Expression | null, wsBeforeSemicolon1: string, test: Expression | null, wsBeforeSemicolon2: string, update: Expression | null, wsBeforeClosing: string, body: Statement, closingParens: string = ")") {
         this.type = Syntax.ForStatement;
         this.init = init;
         this.test = test;
@@ -1074,20 +1074,21 @@ export class IfStatement {
     wsBefore: string;
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     readonly wsBeforeElse: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return this.wsBefore + this.ifKeyword +
         this.wsBeforeOpening + "(" +
         unparseChild(this)(this.test) +
-        this.wsBeforeClosing + ")" +
+        this.wsBeforeClosing + this.closingParens +
         unparseChild(this)(this.consequent) +
         (this.alternate ?
            this.wsBeforeElse + "else" + unparseChild(this)(this.alternate) : "") +
         this.wsAfter;
     }
     constructor(wsBefore: string, ifKeyword: string, wsBeforeOpening: string, test: Expression,
-      wsBeforeClosing: string, consequent: Statement, wsBeforeElse: string, alternate: Statement | null) {
+      wsBeforeClosing: string, consequent: Statement, wsBeforeElse: string, alternate: Statement | null, closingParens: string = ")") {
         this.type = Syntax.IfStatement;
         this.test = test;
         this.consequent = consequent;
@@ -1097,6 +1098,7 @@ export class IfStatement {
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
         this.wsBeforeElse = wsBeforeElse;
+        this.closingParens = closingParens;
     }
 }
 
@@ -1947,20 +1949,22 @@ export class WhileStatement {
     wsBefore: string;
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
+    readonly closingParens: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return this.wsBefore + "while" + this.wsBeforeOpening +
-        "(" + unparseChild(this)(this.test) + this.wsBeforeClosing + ")" +
+        "(" + unparseChild(this)(this.test) + this.wsBeforeClosing + this.closingParens +
         unparseChild(this)(this.body) +
         this.wsAfter;
     }
-    constructor(wsBefore: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string, body: Statement) {
+    constructor(wsBefore: string, wsBeforeOpening: string, test: Expression, wsBeforeClosing: string, body: Statement, closingParens: string = ")") {
         this.type = Syntax.WhileStatement;
         this.test = test;
         this.body = body;
         this.wsBefore = wsBefore;
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
+        this.closingParens = closingParens;
     }
 }
 
@@ -1979,7 +1983,7 @@ export class WithStatement {
         unparseChild(this)(this.body) +
         this.wsAfter;
     }
-    constructor(wsBefore: string, wsBeforeOpening: string, object: Expression, wsBeforeClosing: string, closingParens: string, body: Statement) {
+    constructor(wsBefore: string, wsBeforeOpening: string, object: Expression, wsBeforeClosing: string, body: Statement, closingParens: string = ")") {
         this.type = Syntax.WithStatement;
         this.object = object;
         this.body = body;

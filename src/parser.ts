@@ -2361,7 +2361,7 @@ export class Parser {
         var wsBeforeElse = "";
         const test = this.parseExpression();
         var wsBeforeClosing = "";
-
+        var closingParens = ")";
         if (!this.match(')') && this.config.tolerant) {
             var unexpectedToken = this.nextToken();
             wsBeforeClosing = unexpectedToken.wsBefore;
@@ -2377,7 +2377,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.IfStatement(wsBefore, ifraw, wsBeforeOpening, test, wsBeforeClosing, consequent, wsBeforeElse, alternate));
+        return this.finalize(node, new Node.IfStatement(wsBefore, ifraw, wsBeforeOpening, test, wsBeforeClosing, consequent, wsBeforeElse, alternate, closingParens));
     }
 
     // https://tc39.github.io/ecma262/#sec-do-while-statement
@@ -2410,7 +2410,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.DoWhileStatement(wsBeforeDo, body, wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, closingParens, semicolon));
+        return this.finalize(node, new Node.DoWhileStatement(wsBeforeDo, body, wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, semicolon, closingParens));
     }
 
     // https://tc39.github.io/ecma262/#sec-while-statement
@@ -2423,6 +2423,7 @@ export class Parser {
         const wsBeforeOpening = this.expect('(');
         const test = this.parseExpression();
         var wsBeforeClosing = "";
+        var closingParens = ")";
         if (!this.match(')') && this.config.tolerant) {
             var unexpectedToken = this.nextToken();
             wsBeforeClosing = unexpectedToken.wsBefore;
@@ -2438,7 +2439,7 @@ export class Parser {
             this.context.inIteration = previousInIteration;
         }
 
-        return this.finalize(node, new Node.WhileStatement(wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, body));
+        return this.finalize(node, new Node.WhileStatement(wsBeforeWhile, wsBeforeOpening, test, wsBeforeClosing, body, closingParens));
     }
 
     // https://tc39.github.io/ecma262/#sec-for-statement
@@ -2603,9 +2604,9 @@ export class Parser {
         }
 
         return (typeof left === 'undefined') ?
-            this.finalize(node, new Node.ForStatement(wsBeforeFor, wsBeforeOpening, init, wsBeforeSemicolon1, test, wsBeforeSemicolon2, update, wsBeforeClosing, closingParens, body)) :
-            forIn ? this.finalize(node, new Node.ForInStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, closingParens, body)) :
-                this.finalize(node, new Node.ForOfStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, closingParens, body));
+            this.finalize(node, new Node.ForStatement(wsBeforeFor, wsBeforeOpening, init, wsBeforeSemicolon1, test, wsBeforeSemicolon2, update, wsBeforeClosing, body, closingParens)) :
+            forIn ? this.finalize(node, new Node.ForInStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, body, closingParens)) :
+                this.finalize(node, new Node.ForOfStatement(wsBeforeFor, wsBeforeOpening, left, wsBeforeKeyword, right, wsBeforeClosing, body, closingParens));
     }
 
     // https://tc39.github.io/ecma262/#sec-continue-statement
@@ -2705,7 +2706,7 @@ export class Parser {
             body = this.parseStatement();
         }
 
-        return this.finalize(node, new Node.WithStatement(wsBeforeWith, wsBeforeOpening, object, wsBeforeClosing, closingParens, body));
+        return this.finalize(node, new Node.WithStatement(wsBeforeWith, wsBeforeOpening, object, wsBeforeClosing, body, closingParens));
     }
 
     // https://tc39.github.io/ecma262/#sec-switch-statement
