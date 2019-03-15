@@ -886,7 +886,7 @@ export class Parser {
         const node = this.createNode();
         const token = this.lookahead;
 
-        let kind: string;
+        let kind: "init" | "get" | "set";
         let key: Node.PropertyKey | null = null;
         let value: Node.PropertyValue | null = null;
 
@@ -897,6 +897,7 @@ export class Parser {
         var wsBeforeAsync = "";
         var wsBeforeStar = "";
         var wsBeforeColon = "";
+        var wsBeforeGetSet = "";
 
         if (token.type === Token.Identifier) {
             const id = token.value;
@@ -916,6 +917,7 @@ export class Parser {
         const lookaheadPropertyKey = this.qualifiedPropertyName(this.lookahead);
         if (token.type === Token.Identifier && !isAsync && token.value === 'get' && lookaheadPropertyKey) {
             kind = 'get';
+            wsBeforeGetSet = token.wsBefore;
             computed = this.match('[');
             key = this.parseObjectPropertyKey();
             this.context.allowYield = false;
@@ -923,6 +925,7 @@ export class Parser {
 
         } else if (token.type === Token.Identifier && !isAsync && token.value === 'set' && lookaheadPropertyKey) {
             kind = 'set';
+            wsBeforeGetSet = token.wsBefore;
             computed = this.match('[');
             key = this.parseObjectPropertyKey();
             value = this.parseSetterMethod();
@@ -973,7 +976,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.Property(kind, key as Node.PropertyKey, wsBeforeColon, computed, value, method, shorthand));
+        return this.finalize(node, new Node.Property(kind, key as Node.PropertyKey, wsBeforeGetSet, wsBeforeColon, computed, value, method, shorthand));
     }
 
     parseObjectInitializer(): Node.ObjectExpression {
@@ -2136,7 +2139,7 @@ export class Parser {
             value = this.parsePatternWithDefault(params, kind);
         }
 
-        return this.finalize(node, new Node.Property('init', key, wsBeforeColon, computed, value, method, shorthand));
+        return this.finalize(node, new Node.Property('init', key, "", wsBeforeColon, computed, value, method, shorthand));
     }
 
     parseRestProperty(params, kind): Node.RestElement {

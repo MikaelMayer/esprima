@@ -241,7 +241,7 @@ export class AsyncArrowFunctionExpression {
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeArrow = wsBeforeArrow;
         this.noparens = noparens;
-        this.separators = [];
+        this.separators = separators;
         this.wsBeforeClosing = wsBeforeClosing;
         this.wsBeforeAsync = wsBeforeAsync;
     }
@@ -252,7 +252,7 @@ AsyncFunctionExpression | FunctionExpression;
 // Context-sensitive unparsing definition.
 // If a method, the async and generator (*) are already managed, and the word "function" does not appear.
 var functionDeclarationUnparser = function(this: AnyFunctionExpression, parent) {
-  var isFunctionMethod = parent && parent.type == Syntax.Property && parent.method;
+  var isFunctionMethod = parent && (parent.type == Syntax.Property && (parent.method || parent.kind == "get" || parent.kind == "set") || parent.type == Syntax.MethodDefinition);
   return this.wsBefore +
     (isFunctionMethod ? "" :
     this.async && this.wsBeforeAsync ? this.wsBeforeAsync + "async" : "") +
@@ -1330,11 +1330,14 @@ export class MethodDefinition {
     readonly wsBeforeStatic: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      var keyStr = this.key.unparse(this);
-      var result = this.value ? this.value.unparse(this) : "";
+      var keyStr = unparseChild(this)(this.key);
       return this.wsBefore +
         (this.static ? this.wsBeforeStatic + "static": "") +
-        result.replace(/\(/, keyStr + "(") +
+        (this.value && isFunctionExpression(this.value) ?
+          (this.value.async ? this.value.wsBeforeAsync + "async" : "") +
+          (this.value.generator ? this.value.wsBeforeStar + "*" : "") : "") +
+        keyStr +
+        unparseChild(this)(this.value) +
         this.wsAfter;
     }
     constructor(wsBeforeStatic: string, key: Expression, computed: boolean, value: AsyncFunctionExpression | FunctionExpression | null, kind: string, isStatic: boolean) {
@@ -1447,10 +1450,11 @@ export class Property {
     readonly key: PropertyKey;
     readonly computed: boolean;
     readonly value: PropertyValue | null;
-    readonly kind: string;
+    readonly kind: "init" | "get" | "set";
     readonly method: boolean;
     readonly shorthand: boolean;
     wsBefore: string = "";
+    readonly wsBeforeGetSet: string;
     readonly wsBeforeColon: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
@@ -1459,11 +1463,12 @@ export class Property {
           (this.value.async ? this.value.wsBeforeAsync + "async" : "") +
           (this.value.generator ? this.value.wsBeforeStar + "*" : "") : ""
       : "") +
+        (this.kind == "get" || this.kind == "set" ? this.wsBeforeGetSet + this.kind : "") +
         unparseChild(this)(this.key) +
-        (this.method ? "": this.wsBeforeColon + ":") +
+        (this.method || this.shorthand || this.kind == "get" || this.kind == "set" ? "": this.wsBeforeColon + ":") +
         (this.shorthand ? "" : unparseChild(this)(this.value)) + this.wsAfter;
     }
-    constructor(kind: string, key: PropertyKey, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
+    constructor(kind: "init" | "get" | "set", key: PropertyKey, wsBeforeGetSet: string, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
         this.type = Syntax.Property;
         this.key = key;
         this.computed = computed;
@@ -1471,6 +1476,7 @@ export class Property {
         this.kind = kind;
         this.method = method;
         this.shorthand = shorthand;
+        this.wsBeforeGetSet = wsBeforeGetSet;
         this.wsBeforeColon = wsBeforeColon;
     }
 }
