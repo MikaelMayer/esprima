@@ -1091,7 +1091,9 @@ export class Parser {
                 params: [],
                 async: false,
                 wsBeforeOpening: wsBeforeOpening,
-                wsBeforeClosing: wsBeforeClosing
+                wsBeforeClosing: wsBeforeClosing,
+                separators: separators,
+                noparens: false
             };
         } else {
             const startToken = this.lookahead;
@@ -1107,7 +1109,9 @@ export class Parser {
                     params: [expr],
                     async: false,
                     wsBeforeOpening: wsBeforeOpening,
-                    wsBeforeClosing: wsBeforeClosing
+                    wsBeforeClosing: wsBeforeClosing,
+                    sparators: separators,
+                    noparens: false
                 };
             } else {
                 let arrow = false;
@@ -1136,7 +1140,8 @@ export class Parser {
                                 async: false,
                                 wsBeforeOpening: wsBeforeOpening,
                                 separators: separators,
-                                wsBeforeClosing: wsBeforeClosing
+                                wsBeforeClosing: wsBeforeClosing,
+                                noparens: false
                             };
                         } else if (this.match('...')) { // spread indicates a parameter list
                             if (!this.context.isBindingElement) {
@@ -1158,7 +1163,8 @@ export class Parser {
                                 async: false,
                                 wsBeforeOpening: wsBeforeOpening,
                                 separators: separators,
-                                wsBeforeClosing: wsBeforeClosing
+                                wsBeforeClosing: wsBeforeClosing,
+                                noparens: false
                             };
                         } else {
                             expressions.push(this.inheritCoverGrammar(this.parseAssignmentExpression));
@@ -1180,7 +1186,11 @@ export class Parser {
                             expr = {
                                 type: ArrowParameterPlaceHolder,
                                 params: [expr],
-                                async: false
+                                async: false,
+                                wsBeforeOpening: wsBeforeOpening,
+                                separators: separators,
+                                wsBeforeClosing: wsBeforeClosing,
+                                noparens: false
                             };
                         }
                         if (!arrow) {
@@ -1200,13 +1210,17 @@ export class Parser {
                             expr = {
                                 type: ArrowParameterPlaceHolder,
                                 params: parameters,
-                                wsBeforeOpening: expr.wsBeforeOpening,
-                                separators: expr.separators,
-                                wsBeforeClosing: expr.wsBeforeClosing,
+                                wsBeforeOpening: wsBeforeOpening,
+                                separators: separators,
+                                wsBeforeClosing: wsBeforeClosing,
                                 async: false,
                                 noparens: false
                             };
                         }
+                    } else {
+                      // Add the parentheses to the whitespace before and after
+                      expr.wsBefore = wsBeforeOpening + "(" + expr.wsBefore;
+                      expr.wsAfter = expr.wsAfter + wsBeforeClosing + ")";
                     }
                     this.context.isBindingElement = false;
                 }
@@ -1219,7 +1233,7 @@ export class Parser {
     // https://tc39.github.io/ecma262/#sec-left-hand-side-expressions
 
     parseArguments(): Arguments {
-        var wsBeforeOpening = this.expect('(');
+        const wsBeforeOpening = this.expect('(');
         const args: Node.ArgumentListElement[] = [];
         const separators: string[] = [];
         if (!this.match(')')) {
@@ -1236,7 +1250,7 @@ export class Parser {
                 }
             }
         }
-        var wsBeforeClosing = this.expect(')');
+        const wsBeforeClosing = this.expect(')');
 
         return {parentheses: true,
           wsBeforeOpening:wsBeforeOpening,
@@ -1296,7 +1310,7 @@ export class Parser {
     }
 
     parseAsyncArguments(): Arguments {
-        var wsBeforeOpening = this.expect('(');
+        const wsBeforeOpening = this.expect('(');
         const args: Node.ArgumentListElement[] = [];
         const separators: string[] = [];
         if (!this.match(')')) {
@@ -1313,7 +1327,7 @@ export class Parser {
                 }
             }
         }
-        var wsBeforeClosing = this.expect(')');
+        const wsBeforeClosing = this.expect(')');
 
         return {parentheses: true,
                 wsBeforeOpening: wsBeforeOpening,
