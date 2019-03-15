@@ -46,6 +46,24 @@
             throw new NotMatchingError(expected, actual);
         }
     }
+    const spaceKeys = {
+      original: true,
+      nameRaw: true,
+      closingParens: true,
+      semicolon: true,
+      raw: true,
+      separators: true,
+      hasBrackets: true,
+      ifKeyword: true,
+      arrow: true,
+      noparens: true,
+      parentheses: true,
+      originalCooked: true,
+      originalValue: true
+    }
+    function isSpaceKey(key) {
+      return (key in spaceKeys) || key.startsWith('ws') ;
+    }
 
     function sortedObject(o) {
         var keys, result;
@@ -67,7 +85,7 @@
             loc: undefined
         };
         keys.forEach(function (key) {
-            if (o.hasOwnProperty(key)) {
+            if (o.hasOwnProperty(key) && !isSpaceKey(key)) {
                 result[key] = sortedObject(o[key]);
 
                 // Nullify regex value for ES6 regex flags
@@ -98,7 +116,7 @@
 
     function testParse(code, syntax) {
         'use strict';
-        var expected, tree, actual, options, i, len, nodes;
+        var expected, tree, tree2, actual, options, i, len, nodes;
 
         options = {
             jsx: true,
@@ -150,8 +168,8 @@
                     tree.errors[i] = errorToObject(tree.errors[i]);
                 }
             }
-            //tree = sortedObject(tree); // unparse is a method
-            actual = JSON.stringify(tree, null, 4);
+            tree2 = sortedObject(tree);
+            actual = JSON.stringify(tree2, null, 4);
 
             // Only to ensure that there is no error when using string object.
             esprima.parse(new String(code), options);
@@ -164,7 +182,7 @@
           console.log(tree);
         }
         assertEquality(code, tree.unparse());
-        //assertEquality(expected, actual); // No equality anymore there
+        assertEquality(expected, actual); // No equality anymore there
 
         function filter(key, value) {
             return (key === 'loc' || key === 'range') ? undefined : value;
@@ -187,12 +205,12 @@
                     tree.errors[i] = errorToObject(tree.errors[i]);
                 }
             }
-            //tree = sortedObject(tree); // unparse is a method
-            actual = JSON.stringify(tree, filter, 4);
+            tree2 = sortedObject(tree); // unparse is a method
+            actual = JSON.stringify(tree2, filter, 4);
         } catch (e) {
             throw new NotMatchingError(expected, e.toString());
         }
-        // assertEquality(expected, actual); // Whitespace makes it not equal
+        assertEquality(expected, actual); // Whitespace makes it not equal
         assertEquality(code, tree.unparse());
 
         function collect(node) {

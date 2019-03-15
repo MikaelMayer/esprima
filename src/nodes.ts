@@ -167,7 +167,7 @@ function binaryUnparser(this: AssignmentExpression | BinaryExpression | Assignme
   return this.wsBefore +
     unparseChild(this)(this.left) +
     this.wsBeforeOp +
-    this.operator +
+    (isAssignmentPattern(this) ? "=" : this.operator) +
     unparseChild(this)(this.right) +
     this.wsAfter;
 }
@@ -197,7 +197,6 @@ export class AssignmentPattern {
     readonly right: Expression;
     wsBefore: string = '';
     readonly wsBeforeOp: string;
-    readonly operator = '=';
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
       return binaryUnparser.bind(this)(parent);
