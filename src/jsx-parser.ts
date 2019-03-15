@@ -559,7 +559,7 @@ export class JSXParser extends Parser {
         } else {
             this.finishJSX();
             expression = this.parseAssignmentExpression();
-            wsBeforeEnd = this.reenterJSX();
+            wsBeforeEnd = this.lookahead.wsBefore + this.reenterJSX();
         }
 
         return this.finalize(wsNode.node, new JSXNode.JSXExpressionContainer(wsBefore, expression, wsBeforeEnd));
