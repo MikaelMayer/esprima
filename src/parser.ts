@@ -2364,8 +2364,10 @@ export class Parser {
 
         if (!this.match(')') && this.config.tolerant) {
             var unexpectedToken = this.nextToken();
+            wsBeforeClosing = unexpectedToken.wsBefore;
+            closingParens = this.getTokenRaw(unexpectedToken);
             this.tolerateUnexpectedToken(unexpectedToken);
-            consequent = this.finalize(this.createNode(), new Node.EmptyStatement(unexpectedToken.wsBefore, this.getTokenRaw(unexpectedToken)));
+            consequent = this.finalize(this.createNode(), new Node.EmptyStatement("", ""));
         } else {
             wsBeforeClosing = this.expect(')');
             consequent = this.parseIfClause();
@@ -2423,8 +2425,10 @@ export class Parser {
         var wsBeforeClosing = "";
         if (!this.match(')') && this.config.tolerant) {
             var unexpectedToken = this.nextToken();
+            wsBeforeClosing = unexpectedToken.wsBefore;
+            closingParens = this.getTokenRaw(unexpectedToken);
             this.tolerateUnexpectedToken(unexpectedToken);
-            body = this.finalize(this.createNode(), new Node.EmptyStatement(unexpectedToken.wsBefore, this.getTokenRaw(unexpectedToken)));
+            body = this.finalize(this.createNode(), new Node.EmptyStatement("", ""));
         } else {
             wsBeforeClosing = this.expect(')');
 
