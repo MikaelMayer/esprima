@@ -2878,7 +2878,7 @@ export class Parser {
         const handler = this.matchKeyword('catch') ? this.parseCatchClause() : null;
         const finalizer = this.matchKeyword('finally') ? this.parseFinallyClause() : { wsBeforeFinally: "", content: null};
 
-        if (!handler && !finalizer) {
+        if (!handler && !finalizer.content) {
             this.throwError(Messages.NoCatchOrFinally);
         }
 
