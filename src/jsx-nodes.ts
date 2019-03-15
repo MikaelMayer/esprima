@@ -154,23 +154,25 @@ export class JSXOpeningElement {
     readonly name: JSXElementName;
     readonly selfClosing: boolean;
     readonly attributes: JSXElementAttribute[];
-    readonly wsBeforeEnd: string;
     readonly wsBefore: string;
+    readonly wsBeforeEnd: string;
+    readonly wsBeforeGt: string;
     wsAfter: string = "";
     unparse(parent?: Node.Unparsable): string {
       return this.wsBefore +
         "<" + Node.unparseChild(this)(this.name) +
         Node.unparseChildren(this)(this.attributes) +
-        this.wsBeforeEnd + (this.selfClosing ? "/" : "") + ">" +
+        this.wsBeforeEnd + (this.selfClosing ? "/" : "") + this.wsBeforeGt + ">" +
         this.wsAfter;
     }
-    constructor(wsBefore: string, name: JSXElementName, selfClosing: boolean, attributes: JSXElementAttribute[], wsBeforeEnd: string) {
+    constructor(wsBefore: string, name: JSXElementName, selfClosing: boolean, attributes: JSXElementAttribute[], wsBeforeEnd: string, wsBeforeGt: string) {
         this.type = JSXSyntax.JSXOpeningElement;
         this.name = name;
         this.selfClosing = selfClosing;
         this.attributes = attributes;
         this.wsBefore = wsBefore;
         this.wsBeforeEnd = wsBeforeEnd;
+        this.wsBeforeGt = wsBeforeGt;
     }
 }
 

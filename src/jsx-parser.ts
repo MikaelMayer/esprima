@@ -502,11 +502,8 @@ export class JSXParser extends Parser {
             wsBeforeEnd = this.expectJSX('/');
         }
         var wsBeforeGt = this.expectJSX('>');
-        if(!selfClosing) {
-          wsBeforeEnd = wsBeforeGt;
-        }
 
-        return this.finalize(wsNode.node, new JSXNode.JSXOpeningElement(wsBefore, name, selfClosing, attributes, wsBeforeEnd));
+        return this.finalize(wsNode.node, new JSXNode.JSXOpeningElement(wsBefore, name, selfClosing, attributes, wsBeforeEnd, wsBeforeGt));
     }
 
     parseJSXBoundaryElement(): JSXNode.JSXOpeningElement | JSXNode.JSXClosingElement {
@@ -528,11 +525,8 @@ export class JSXParser extends Parser {
             wsBeforeEnd = this.expectJSX('/');
         }
         var wsBeforeGt = this.expectJSX('>');
-        if(!selfClosing) {
-          wsBeforeEnd = wsBeforeGt;
-        }
 
-        return this.finalize(wsNode.node, new JSXNode.JSXOpeningElement(wsBefore, name, selfClosing, attributes, wsBeforeEnd));
+        return this.finalize(wsNode.node, new JSXNode.JSXOpeningElement(wsBefore, name, selfClosing, attributes, wsBeforeEnd, wsBeforeGt));
     }
 
     parseJSXEmptyExpression(): JSXNode.JSXEmptyExpression {
