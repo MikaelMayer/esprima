@@ -785,6 +785,7 @@ export class ExportNamedDeclaration {
     readonly specifiers: ExportSpecifier[];
     readonly source: Literal | null;
     wsBefore: string;
+    readonly hasbrackets: boolean;
     readonly wsBeforeOpening: string;
     readonly separators: string[];
     readonly wsBeforeClosing: string;
@@ -796,13 +797,14 @@ export class ExportNamedDeclaration {
         "export" +
         (this.declaration ?
            unparseChild(this)(this.declaration): "") +
-        (this.specifiers.length ? 
+        (this.specifiers.length || this.hasbrackets ? 
           this.wsBeforeOpening + "{" + unparseChildren(this, this.separators, ",")(this.specifiers) + this.wsBeforeClosing + "}"
           : ""
         ) + 
         (this.source ? this.wsBeforeFrom + "from" + unparseChild(this)(this.source) : "") + this.semicolon + this.wsAfter;
     }
     constructor(wsBefore: string, declaration: ExportableNamedDeclaration | null,
+                hasbrackets: boolean,
                 wsBeforeOpening: string, specifiers: ExportSpecifier[], separators: string[], wsBeforeClosing: string,
                 wsBeforeFrom: string, source: Literal | null, semicolon: string = "") {
         this.type = Syntax.ExportNamedDeclaration;
@@ -810,6 +812,7 @@ export class ExportNamedDeclaration {
         this.specifiers = specifiers;
         this.source = source;
         this.wsBefore = wsBefore;
+        this.hasbrackets = hasbrackets;
         this.wsBeforeOpening = wsBeforeOpening;
         this.separators = separators;
         this.wsBeforeClosing = wsBeforeClosing;
@@ -1038,15 +1041,19 @@ export class FunctionExpression {
 
 export class Identifier {
     readonly type: string;
-    readonly name: string;
+    readonly name: string; //can be modified
+    readonly original: string;
+    readonly nameRaw: string;
     wsBefore: string;
     readonly wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + this.name + this.wsAfter;
+      return this.wsBefore + (this.name == this.original ? this.nameRaw : this.name) + this.wsAfter;
     }
-    constructor(wsBefore, name) {
+    constructor(wsBefore: string, name: string, nameRaw: string) {
         this.type = Syntax.Identifier;
         this.name = name;
+        this.original = name;
+        this.nameRaw = nameRaw;
         this.wsBefore = wsBefore;
     }
 }
@@ -1103,6 +1110,7 @@ export class ImportDeclaration {
     readonly specifiers: ImportDeclarationSpecifier[];
     readonly source: Literal;
     wsBefore: string;
+    readonly hasBrackets: boolean;
     readonly separators: string[];
     readonly wsBeforeOpening: string;
     readonly wsBeforeClosing: string;
@@ -1111,7 +1119,7 @@ export class ImportDeclaration {
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       var result = this.wsBefore + "import";
-      if(this.specifiers.length == 0) {
+      if(this.specifiers.length == 0 && !this.hasBrackets) {
         return result + unparseChild(this)(this.source) + this.semicolon + this.wsAfter;
       }
       var insideImportSpecifiers = false;
@@ -1130,14 +1138,19 @@ export class ImportDeclaration {
           result += ', ';
         }
       }
+      if(!insideImportSpecifiers && this.hasBrackets) {
+        result += this.wsBeforeOpening + "{";
+        insideImportSpecifiers = true;
+      }
       if(insideImportSpecifiers) {
         result += this.wsBeforeClosing + "}";
       }
       return result + this.wsBeforeFrom + "from" +
          unparseChild(this)(this.source) + this.semicolon + this.wsAfter;
     }
-    constructor(wsBefore: string, wsBeforeOpening: string, specifiers: ImportDeclarationSpecifier[], separators: string[], wsBeforeClosing: string, wsBeforeFrom: string, source, semicolon: string = "") {
+    constructor(wsBefore: string, wsBeforeOpening: string, hasBrackets: boolean, specifiers: ImportDeclarationSpecifier[], separators: string[], wsBeforeClosing: string, wsBeforeFrom: string, source, semicolon: string = "") {
         this.type = Syntax.ImportDeclaration;
+        this.hasBrackets = hasBrackets;
         this.specifiers = specifiers;
         this.source = source;
         this.wsBefore = wsBefore;
@@ -1365,14 +1378,15 @@ export class Module {
     readonly body: StatementListItem[];
     readonly sourceType: string;
     wsBefore: string = "";
-    wsAfter: string = "";
+    wsAfter: string;
     unparse(parent?: Unparsable): string {
       return this.wsBefore + unparseChildren(this)(this.body) + this.wsAfter;
     }
-    constructor(body: StatementListItem[]) {
+    constructor(body: StatementListItem[], wsAfter: string) {
         this.type = Syntax.Program;
         this.body = body;
         this.sourceType = 'module';
+        this.wsAfter = wsAfter;
     }
 }
 

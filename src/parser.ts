@@ -665,7 +665,12 @@ export class Parser {
                 if ((this.context.isModule || this.context.await) && this.lookahead.value === 'await') {
                     this.tolerateUnexpectedToken(this.lookahead);
                 }
-                expr = this.matchAsyncFunction() ? this.parseFunctionExpression() : this.finalize(node, new Node.Identifier(this.lookahead.wsBefore, this.nextToken().value));
+                if(this.matchAsyncFunction()) {
+                  expr = this.parseFunctionExpression();
+                } else {
+                  let token = this.nextToken();
+                  expr = this.finalize(node, new Node.Identifier(token.wsBefore, token.value as string, this.getTokenRaw(token)));
+                }
                 break;
 
             case Token.NumericLiteral:
@@ -731,7 +736,7 @@ export class Parser {
                     expr = this.parseIdentifierName();
                 } else if (!this.context.strict && this.matchKeyword('let')) {
                     var letToken = this.nextToken();
-                    expr = this.finalize(node, new Node.Identifier(letToken.wsBefore, letToken.value));
+                    expr = this.finalize(node, new Node.Identifier(letToken.wsBefore, letToken.value as string, this.getTokenRaw(letToken)));
                 } else {
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
@@ -868,7 +873,7 @@ export class Parser {
             case Token.BooleanLiteral:
             case Token.NullLiteral:
             case Token.Keyword:
-                key = this.finalize(node, new Node.Identifier(token.wsBefore, token.value));
+                key = this.finalize(node, new Node.Identifier(token.wsBefore, token.value as string, this.getTokenRaw(token)));
                 break;
 
             case Token.Punctuator:
@@ -921,7 +926,7 @@ export class Parser {
             isAsync = !this.hasLineTerminator && (id === 'async') &&
                 !this.match(':') && !this.match('(') && !this.match('*') && !this.match(',');
             wsBeforeAsync = isAsync ? token.wsBefore : "";
-            objectPropertyKey = isAsync ? this.parseObjectPropertyKey() : {computed: false, wsBeforeOpening: "", wsBeforeClosing: "", key: this.finalize(node, new Node.Identifier(token.wsBefore, id))};
+            objectPropertyKey = isAsync ? this.parseObjectPropertyKey() : {computed: false, wsBeforeOpening: "", wsBeforeClosing: "", key: this.finalize(node, new Node.Identifier(token.wsBefore, id as string, this.getTokenRaw(token)))};
             key = objectPropertyKey.key;
             wsBeforeOpening = objectPropertyKey.wsBeforeOpening;
             wsBeforeClosing = objectPropertyKey.wsBeforeClosing;
@@ -995,7 +1000,7 @@ export class Parser {
                 method = true;
 
             } else if (token.type === Token.Identifier) {
-                const id = this.finalize(node, new Node.Identifier(token.wsBefore, token.value));
+                const id = this.finalize(node, new Node.Identifier(token.wsBefore, token.value as string, this.getTokenRaw(token)));
                 if (this.match('=')) {
                     this.context.firstCoverInitializedNameError = this.lookahead;
                     var wsBeforeEq = this.nextToken().wsBefore;
@@ -1310,7 +1315,7 @@ export class Parser {
         if (!this.isIdentifierName(token)) {
             this.throwUnexpectedToken(token);
         }
-        return this.finalize(node, new Node.Identifier(token.wsBefore, token.value));
+        return this.finalize(node, new Node.Identifier(token.wsBefore, token.value as string, this.getTokenRaw(token)));
     }
 
     parseNewExpression(): Node.MetaProperty | Node.NewExpression {
@@ -2155,7 +2160,7 @@ export class Parser {
         if (this.lookahead.type === Token.Identifier) {
             const keyToken = this.lookahead;
             key = this.parseVariableIdentifier();
-            const init = this.finalize(node, new Node.Identifier(keyToken.wsBefore, keyToken.value));
+            const init = this.finalize(node, new Node.Identifier(keyToken.wsBefore, keyToken.value as string, this.getTokenRaw(keyToken)));
             if (this.match('=')) {
                 params.push(keyToken);
                 shorthand = true;
@@ -2272,7 +2277,7 @@ export class Parser {
             this.tolerateUnexpectedToken(token);
         }
 
-        return this.finalize(node, new Node.Identifier(token.wsBefore, token.value));
+        return this.finalize(node, new Node.Identifier(token.wsBefore, token.value as string, this.getTokenRaw(token)));
     }
 
     parseVariableDeclaration(options: DeclarationOptions): Node.VariableDeclarator {
@@ -2490,7 +2495,7 @@ export class Parser {
                 const kind = kindToken.value as string;
 
                 if (!this.context.strict && this.lookahead.value === 'in') {
-                    init = this.finalize(init, new Node.Identifier(kindToken.wsBefore, kind));
+                    init = this.finalize(init, new Node.Identifier(kindToken.wsBefore, kind, this.getTokenRaw(kindToken)));
                     this.nextToken();
                     left = init;
                     right = this.parseExpression();
@@ -3648,7 +3653,7 @@ export class Parser {
         while (this.lookahead.type !== Token.EOF) {
             body.push(this.parseStatementListItem());
         }
-        return this.finalize(node, new Node.Module(body));
+        return this.finalize(node, new Node.Module(body, this.lookahead.wsBefore));
     }
 
     parseScript(): Node.Script {
@@ -3756,12 +3761,14 @@ export class Parser {
         var wsBeforeFrom = "";
         var wsBeforeOpening = "";
         var wsBeforeClosing = "";
+        var hasBrackets = false;
         if (this.lookahead.type === Token.StringLiteral) {
             // import 'foo';
             src = this.parseModuleSpecifier();
         } else {
             if (this.match('{')) {
                 // import {bar}
+                hasBrackets = true;
                 var namedImports = this.parseNamedImports();
                 wsBeforeOpening = namedImports.wsBeforeOpening;
                 separators = separators.concat(namedImports.separators);
@@ -3780,6 +3787,7 @@ export class Parser {
                         specifiers.push(this.parseImportNamespaceSpecifier());
                     } else if (this.match('{')) {
                         // import foo, {bar}
+                        hasBrackets = true;
                         var namedImports = this.parseNamedImports();
                         wsBeforeOpening = namedImports.wsBeforeOpening;
                         separators = separators.concat(namedImports.separators);
@@ -3802,7 +3810,7 @@ export class Parser {
         }
         const semicolon = this.consumeSemicolon();
 
-        return this.finalize(node, new Node.ImportDeclaration(wsBefore, wsBeforeOpening, specifiers, separators, wsBeforeClosing, wsBeforeFrom, src, semicolon));
+        return this.finalize(node, new Node.ImportDeclaration(wsBefore, wsBeforeOpening, hasBrackets, specifiers, separators, wsBeforeClosing, wsBeforeFrom, src, semicolon));
     }
 
     // https://tc39.github.io/ecma262/#sec-exports
@@ -3892,11 +3900,11 @@ export class Parser {
                 default:
                     this.throwUnexpectedToken(this.lookahead);
             }
-            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(wsBeforeExport, declaration, "", [], [], "", "", null));
+            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(wsBeforeExport, declaration, false, "", [], [], "", "", null));
 
         } else if (this.matchAsyncFunction()) {
             const declaration = this.parseFunctionDeclaration();
-            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(wsBeforeExport, declaration, "", [], [], "", "", null));
+            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(wsBeforeExport, declaration, false, "", [], [], "", "", null));
 
         } else {
             const specifiers: Node.ExportSpecifier[] = [];
@@ -3929,7 +3937,7 @@ export class Parser {
                 // export {foo};
                 semicolon = this.consumeSemicolon();
             }
-            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(wsBeforeExport, null, wsBeforeOpening, specifiers, separators, wsBeforeClosing, wsBeforeFrom, source, semicolon));
+            exportDeclaration = this.finalize(node, new Node.ExportNamedDeclaration(wsBeforeExport, null, true, wsBeforeOpening, specifiers, separators, wsBeforeClosing, wsBeforeFrom, source, semicolon));
         }
 
         return exportDeclaration;
