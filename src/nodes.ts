@@ -1529,19 +1529,24 @@ export class RegexLiteral {
     readonly value: RegExp;
     readonly raw: string;
     readonly regex: { pattern: string, flags: string };
+    readonly original: { pattern: string, flags: string };
     wsBefore: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "/" +
+      return this.wsBefore +
+        (this.original.pattern == this.regex.pattern &&
+         this.original.flags == this.regex.flags ? this.raw :
+        "/" +
         this.regex.pattern +
         "/" +
-        this.regex.flags + this.wsAfter;
+        this.regex.flags) + this.wsAfter;
     }
     constructor(wsBefore: string, value: RegExp, raw: string, pattern: string, flags: string) {
         this.type = Syntax.Literal;
         this.value = value;
         this.raw = raw;
         this.regex = { pattern, flags };
+        this.original = { pattern, flags };
         this.wsBefore = wsBefore;
     }
 }
