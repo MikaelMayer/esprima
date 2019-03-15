@@ -38,7 +38,7 @@ export let unparseChildren = (parent: any = undefined,
                               join: string | string[] = '', defaultJoin = '') => (children: UnparsableOrNull[]) => {
   if (children) {
     const renderedChildren = children.map((child) => child ? child.unparse(parent) : '');
-    if (typeof join == 'string') {
+    if (typeof join === 'string') {
       return renderedChildren.join(join);
     }
     let result = '';
@@ -118,10 +118,10 @@ const arrowFunctionUnparser = function(this: ArrowFunctionExpression | AsyncArro
   return this.wsBefore +
     (this.async ? this.wsBeforeAsync + 'async' : '') +
     this.wsBeforeOpening +
-    (this.params.length == 1 && this.noparens ? '' : '(') +
+    (this.params.length === 1 && this.noparens ? '' : '(') +
     unparseChildren(this, this.separators, ', ')(this.params) +
     this.wsBeforeClosing +
-    (this.params.length == 1 && this.noparens ? '' : ')') +
+    (this.params.length === 1 && this.noparens ? '' : ')') +
     this.wsBeforeArrow +
     this.arrow +
     unparseChild(this)(this.body) +
@@ -252,7 +252,7 @@ AsyncFunctionExpression | FunctionExpression;
 // Context-sensitive unparsing definition.
 // If a method, the async and generator (*) are already managed, and the word "function" does not appear.
 const functionDeclarationUnparser = function(this: AnyFunctionExpression, parent) {
-  const isFunctionMethod = parent && (parent.type == Syntax.Property && (parent.method || parent.kind == 'get' || parent.kind == 'set') || parent.type == Syntax.MethodDefinition);
+  const isFunctionMethod = parent && (parent.type === Syntax.Property && (parent.method || parent.kind === 'get' || parent.kind === 'set') || parent.type === Syntax.MethodDefinition);
   return this.wsBefore +
     (isFunctionMethod ? '' :
     this.async ? this.wsBeforeAsync + 'async' : '') +
@@ -835,7 +835,7 @@ export class ExportSpecifier {
       const exportedStr = unparseChild(this)(this.exported);
       return this.wsBefore +
         localStr +
-        (this.noAs && localStr == exportedStr ?
+        (this.noAs && localStr === exportedStr ?
             ''
           : this.wsBeforeAs + 'as' + unparseChild(this)(this.exported)) +
         this.wsAfter;
@@ -1055,7 +1055,7 @@ export class Identifier {
     wsBefore: string;
     readonly wsAfter: string = '';
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + (this.name == this.original ? this.nameRaw : this.name) + this.wsAfter;
+      return this.wsBefore + (this.name === this.original ? this.nameRaw : this.name) + this.wsAfter;
     }
     constructor(wsBefore: string, name: string, nameRaw: string) {
         this.type = Syntax.Identifier;
@@ -1131,13 +1131,13 @@ export class ImportDeclaration {
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
       let result = this.wsBefore + 'import';
-      if (this.specifiers.length == 0 && !this.hasBrackets) {
+      if (this.specifiers.length === 0 && !this.hasBrackets) {
         return result + unparseChild(this)(this.source) + this.semicolon + this.wsAfter;
       }
       let insideImportSpecifiers = false;
       for (let i = 0; i < this.specifiers.length; i++) {
         const specifier = this.specifiers[i];
-        if (specifier.type == Syntax.ImportSpecifier) {
+        if (specifier.type === Syntax.ImportSpecifier) {
           if (!insideImportSpecifiers) {
             result += this.wsBeforeOpening + '{';
             insideImportSpecifiers = true;
@@ -1248,32 +1248,33 @@ export class LabeledStatement {
         this.wsBeforeColon = wsBeforeColon;
     }
 }
-function unescapeCharSequence(string: string): string {
-  return string.replace(/[\\\b\f\n\r\t\v]/g, function(m) {
-      switch (m) {
-        case '\\': return '\\\\';
-        case '\b': return '\\b';
-        case '\f': return '\\f';
-        case '\n': return '\\n';
-        case '\r': return '\\r';
-        case '\t': return '\\t';
-        case '\v': return '\\v';
-        default: return m;
-      }
-    });
+function unescapeChar(m) {
+  switch (m) {
+    case '\\': return '\\\\';
+    case '\b': return '\\b';
+    case '\f': return '\\f';
+    case '\n': return '\\n';
+    case '\r': return '\\r';
+    case '\t': return '\\t';
+    case '\v': return '\\v';
+    default: return m;
+  }
+}
+function unescapeCharSequence(str: string): string {
+  return str.replace(/[\\\b\f\n\r\t\v]/g, unescapeChar);
 }
 
 function uneval(x: any): string {
-  if (typeof x == 'string') {
+  if (typeof x === 'string') {
     return toExpString(x);
   }
-  if (typeof x == 'number' || typeof x == 'boolean') {
+  if (typeof x === 'number' || typeof x === 'boolean') {
     return '' + x;
   }
-  if (typeof x == 'object' && x == null) {
+  if (typeof x === 'object' && x === null) {
     return 'null';
   }
-  if (typeof x == 'object' && typeof x.length == 'number') { // Arrays
+  if (typeof x === 'object' && typeof x.length === 'number') { // Arrays
     const result: string[] = [];
     x = x as any[];
     for (let i = 0; i < x.length; i++) {
@@ -1281,18 +1282,18 @@ function uneval(x: any): string {
     }
     return '[' + result.join(',') + ']';
   }
-  if (typeof x == 'object') {
+  if (typeof x === 'object') {
     const result: string[] = [];
-    for (const k in x) {
+    for (const k of Object.keys(x)) {
       result.push(k + ':' + uneval(x[k]));
     }
     return '{' + result.join(', ') + '}';
   }
   return '' + x;
 }
-function toExpString(string, raw?) {
-  const charDelim = raw && raw.length >= 1 && (raw[0] == '"' || raw[0] == '`' || raw[0] == '\'') ? raw[0] : '"';
-  return charDelim + unescapeCharSequence(string).replace(charDelim, '\\' + charDelim) + charDelim;
+function toExpString(str, raw?) {
+  const charDelim = raw && raw.length >= 1 && (raw[0] === '"' || raw[0] === '`' || raw[0] === '\'') ? raw[0] : '"';
+  return charDelim + unescapeCharSequence(str).replace(charDelim, '\\' + charDelim) + charDelim;
 }
 
 export class Literal {
@@ -1305,9 +1306,9 @@ export class Literal {
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
         (this.original === this.value ? this.raw :
-        typeof this.value == 'string' ?
+        typeof this.value === 'string' ?
             toExpString(this.value, this.raw) :
-          typeof this.value == 'object' ?
+          typeof this.value === 'object' ?
             this.value === null ?
               'null' :
               uneval(this.value) :
@@ -1364,7 +1365,7 @@ export class MethodDefinition {
         (this.value && isFunctionExpression(this.value) ?
           (this.value.async ? this.value.wsBeforeAsync + 'async' : '') +
           (this.value.generator ? this.value.wsBeforeStar + '*' : '') : '') +
-        (this.kind == 'set' || this.kind == 'get' ? this.wsBeforeGetSet + this.kind : '') +
+        (this.kind === 'set' || this.kind === 'get' ? this.wsBeforeGetSet + this.kind : '') +
         (this.computed ? this.wsBeforeOpening + '[' : '') +
         keyStr +
         (this.computed ? this.wsBeforeClosing + ']' : '') +
@@ -1504,9 +1505,9 @@ export class Property {
           (this.value.async ? this.value.wsBeforeAsync + 'async' : '') +
           (this.value.generator ? this.value.wsBeforeStar + '*' : '') : ''
       : '') +
-        (this.kind == 'get' || this.kind == 'set' ? this.wsBeforeGetSet + this.kind : '') +
+        (this.kind === 'get' || this.kind === 'set' ? this.wsBeforeGetSet + this.kind : '') +
         (!this.shorthand || (this.value && !ap) ? (this.computed ? this.wsBeforeOpening + '[' : '') + unparseChild(this)(this.key) + (this.computed ? this.wsBeforeClosing + ']' : '')  : '') +
-        (this.method || this.shorthand || this.kind == 'get' || this.kind == 'set' ? '' : this.wsBeforeColon + ':') +
+        (this.method || this.shorthand || this.kind === 'get' || this.kind === 'set' ? '' : this.wsBeforeColon + ':') +
         (this.shorthand && !ap ? '' : unparseChild(this)(this.value)) + this.wsAfter;
     }
     constructor(kind: 'init' | 'get' | 'set', key: PropertyKey, wsBeforeGetSet: string, wsBeforeOpening: string, wsBeforeClosing: string, wsBeforeColon: string, computed: boolean, value: PropertyValue | null, method: boolean, shorthand: boolean) {
@@ -1534,8 +1535,8 @@ export class RegexLiteral {
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
-        (this.original.pattern == this.regex.pattern &&
-         this.original.flags == this.regex.flags ? this.raw :
+        (this.original.pattern === this.regex.pattern &&
+         this.original.flags === this.regex.flags ? this.raw :
         '/' +
         this.regex.pattern +
         '/' +
@@ -1772,7 +1773,7 @@ export class TemplateElement {
     wsAfter: string = '';
     unparse(parent?: Unparsable): string {
       return this.wsBefore +
-        (this.value.cooked == this.originalCooked ? this.value.raw :
+        (this.value.cooked === this.originalCooked ? this.value.raw :
           this.value.cooked.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')) +
         this.wsAfter;
     }

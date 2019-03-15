@@ -100,7 +100,7 @@ export class JSXParser extends Parser {
         const wsStart = this.scanner.index;
         this.collectComments();
         const tokenStart = this.scanner.index;
-        const wsBefore = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const wsBefore = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
 
         return {wsBefore, node: {
             index: this.scanner.index,
@@ -282,7 +282,7 @@ export class JSXParser extends Parser {
         const wsStart = this.scanner.index;
         this.collectComments();
         const tokenStart = this.scanner.index;
-        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
 
         this.startMarker.index = this.scanner.index;
         this.startMarker.line = this.scanner.lineNumber;
@@ -350,7 +350,7 @@ export class JSXParser extends Parser {
         const wsStart = this.scanner.index;
         this.scanner.scanComments();
         const tokenStart = this.scanner.index;
-        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
         const next = this.lexJSX(ws);
         this.scanner.restoreState(state);
 
@@ -509,17 +509,17 @@ export class JSXParser extends Parser {
         const wsNode = this.createJSXNode();
 
         const wsBefore = wsNode.wsBefore + this.expectJSX('<');
+        let wsBeforeEnd = '';
         if (this.matchJSX('/')) {
             this.expectJSX('/');
             const elementName = this.parseJSXElementName();
-            const wsBeforeEnd = this.expectJSX('>');
+            wsBeforeEnd = this.expectJSX('>');
             return this.finalize(wsNode.node, new JSXNode.JSXClosingElement(elementName, wsBeforeEnd));
         }
 
         const name = this.parseJSXElementName();
         const attributes = this.parseJSXAttributes();
         const selfClosing = this.matchJSX('/');
-        let wsBeforeEnd = '';
         if (selfClosing) {
             wsBeforeEnd = this.expectJSX('/');
         }
@@ -533,7 +533,7 @@ export class JSXParser extends Parser {
         const wsStart = this.scanner.index;
         this.collectComments();
         const tokenStart = this.scanner.index;
-        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
         this.lastMarker.index = this.scanner.index;
         this.lastMarker.line = this.scanner.lineNumber;
         this.lastMarker.column = this.scanner.index - this.scanner.lineStart;

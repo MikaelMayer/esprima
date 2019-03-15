@@ -131,7 +131,7 @@ export class Tokenizer {
             const wsStart = this.scanner.index;
             const comments: Comment[] = this.scanner.scanComments();
             const tokenStart = this.scanner.index;
-            const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+            const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
             if (this.scanner.trackComment) {
                 for (let i = 0; i < comments.length; ++i) {
                     const e: Comment = comments[i];

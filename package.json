@@ -76,6 +76,7 @@
   "scripts": {
     "check-version": "node test/check-version.js",
     "tslint": "tslint src/*.ts",
+    "fixlint": "tslint --fix src/*.ts",
     "code-style": "tsfmt --verify src/*.ts && tsfmt --verify test/*.js",
     "format-code": "tsfmt -r src/*.ts && tsfmt -r test/*.js",
     "complexity": "node test/check-complexity.js",

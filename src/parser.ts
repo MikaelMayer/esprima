@@ -373,7 +373,7 @@ export class Parser {
         const wsStart = this.scanner.index;
         this.collectComments();
         const tokenStart = this.scanner.index;
-        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
 
         if (this.scanner.index !== this.startMarker.index) {
             this.startMarker.index = this.scanner.index;
@@ -664,7 +664,7 @@ export class Parser {
                 if (this.matchAsyncFunction()) {
                   expr = this.parseFunctionExpression();
                 } else {
-                  const token = this.nextToken();
+                  token = this.nextToken();
                   expr = this.finalize(node, new Node.Identifier(token.wsBefore, token.value as string, this.getTokenRaw(token)));
                 }
                 break;
@@ -1382,7 +1382,7 @@ export class Parser {
             const wsStart = this.scanner.index;
             this.collectComments();
             const tokenStart = this.scanner.index;
-            const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+            const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
             const next = this.scanner.lex(ws);
             this.scanner.restoreState(state);
             match = (next.type === Token.Punctuator) && (next.value === '(');
@@ -2074,7 +2074,7 @@ export class Parser {
         const wsStart = this.scanner.index;
         this.collectComments();
         const tokenStart = this.scanner.index;
-        const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+        const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
 
         const next = this.scanner.lex(ws);
         this.scanner.restoreState(state);
@@ -3119,7 +3119,7 @@ export class Parser {
             const wsStart = this.scanner.index;
             this.scanner.scanComments();
             const tokenStart = this.scanner.index;
-            const ws = tokenStart == wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
+            const ws = tokenStart === wsStart ? '' : this.scanner.source.substring(wsStart, tokenStart);
             const next = this.scanner.lex(ws);
             this.scanner.restoreState(state);
 
