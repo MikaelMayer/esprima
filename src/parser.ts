@@ -1106,6 +1106,7 @@ export class Parser {
                 break;
             case Syntax.AssignmentExpression:
                 expr.type = Syntax.AssignmentPattern;
+                delete expr.operator;
                 this.reinterpretExpressionAsPattern(expr.left);
                 break;
             default:

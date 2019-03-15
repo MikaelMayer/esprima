@@ -317,7 +317,6 @@ export class JSXParser extends Parser {
             if (Character.isLineTerminator(ch.charCodeAt(0))) {
                 ++this.scanner.lineNumber;
                 if (ch === '\r' && this.scanner.source[this.scanner.index] === '\n') {
-                    text += '\n'; // So that text = raw;
                     ++this.scanner.index;
                 }
                 this.scanner.lineStart = this.scanner.index;

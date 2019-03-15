@@ -59,7 +59,9 @@
       noparens: true,
       parentheses: true,
       originalCooked: true,
-      originalValue: true
+      originalValue: true,
+      asPresent: true,
+      noAs: true
     }
     function isSpaceKey(key) {
       return (key in spaceKeys) || key.startsWith('ws') ;

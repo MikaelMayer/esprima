@@ -167,7 +167,7 @@ function binaryUnparser(this: AssignmentExpression | BinaryExpression | Assignme
   return this.wsBefore +
     unparseChild(this)(this.left) +
     this.wsBeforeOp +
-    (isAssignmentPattern(this) ? "=" : this.operator) +
+    (isAssignmentPattern(this) ? '=' : this.operator) +
     unparseChild(this)(this.right) +
     this.wsAfter;
 }
@@ -786,7 +786,7 @@ export class ExportNamedDeclaration {
     readonly specifiers: ExportSpecifier[];
     readonly source: Literal | null;
     wsBefore: string;
-    readonly hasbrackets: boolean;
+    readonly hasBrackets: boolean;
     readonly wsBeforeOpening: string;
     readonly separators: string[];
     readonly wsBeforeClosing: string;
@@ -798,14 +798,14 @@ export class ExportNamedDeclaration {
         'export' +
         (this.declaration ?
            unparseChild(this)(this.declaration) : '') +
-        (this.specifiers.length || this.hasbrackets ?
+        (this.specifiers.length || this.hasBrackets ?
           this.wsBeforeOpening + '{' + unparseChildren(this, this.separators, ',')(this.specifiers) + this.wsBeforeClosing + '}'
           : ''
         ) +
         (this.source ? this.wsBeforeFrom + 'from' + unparseChild(this)(this.source) : '') + this.semicolon + this.wsAfter;
     }
     constructor(wsBefore: string, declaration: ExportableNamedDeclaration | null,
-                hasbrackets: boolean,
+                hasBrackets: boolean,
                 wsBeforeOpening: string, specifiers: ExportSpecifier[], separators: string[], wsBeforeClosing: string,
                 wsBeforeFrom: string, source: Literal | null, semicolon: string = '') {
         this.type = Syntax.ExportNamedDeclaration;
@@ -813,7 +813,7 @@ export class ExportNamedDeclaration {
         this.specifiers = specifiers;
         this.source = source;
         this.wsBefore = wsBefore;
-        this.hasbrackets = hasbrackets;
+        this.hasBrackets = hasBrackets;
         this.wsBeforeOpening = wsBeforeOpening;
         this.separators = separators;
         this.wsBeforeClosing = wsBeforeClosing;
