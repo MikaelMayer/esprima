@@ -2355,7 +2355,7 @@ export class Parser {
         const node = this.createNode();
         let consequent: Node.Statement;
         let alternate: Node.Statement | null = null;
-
+        let ifraw = this.getTokenRaw(this.lookahead);
         const wsBefore = this.expectKeyword('if');
         const wsBeforeOpening = this.expect('(');
         var wsBeforeElse = "";
@@ -2375,7 +2375,7 @@ export class Parser {
             }
         }
 
-        return this.finalize(node, new Node.IfStatement(wsBefore, wsBeforeOpening, test, wsBeforeClosing, consequent, wsBeforeElse, alternate));
+        return this.finalize(node, new Node.IfStatement(wsBefore, ifraw, wsBeforeOpening, test, wsBeforeClosing, consequent, wsBeforeElse, alternate));
     }
 
     // https://tc39.github.io/ecma262/#sec-do-while-statement

@@ -1059,6 +1059,7 @@ export class Identifier {
 }
 export class IfStatement {
     readonly type: string;
+    readonly ifKeyword: string;
     readonly test: Expression;
     readonly consequent: Statement;
     readonly alternate: Statement | null;
@@ -1068,7 +1069,7 @@ export class IfStatement {
     readonly wsBeforeElse: string;
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
-      return this.wsBefore + "if" +
+      return this.wsBefore + this.ifKeyword +
         this.wsBeforeOpening + "(" +
         unparseChild(this)(this.test) +
         this.wsBeforeClosing + ")" +
@@ -1077,12 +1078,13 @@ export class IfStatement {
            this.wsBeforeElse + "else" + unparseChild(this)(this.alternate) : "") +
         this.wsAfter;
     }
-    constructor(wsBefore: string, wsBeforeOpening: string, test: Expression,
+    constructor(wsBefore: string, ifKeyword: string, wsBeforeOpening: string, test: Expression,
       wsBeforeClosing: string, consequent: Statement, wsBeforeElse: string, alternate: Statement | null) {
         this.type = Syntax.IfStatement;
         this.test = test;
         this.consequent = consequent;
         this.alternate = alternate;
+        this.ifKeyword = ifKeyword;
         this.wsBefore = wsBefore;
         this.wsBeforeOpening = wsBeforeOpening;
         this.wsBeforeClosing = wsBeforeClosing;
@@ -1521,7 +1523,7 @@ export class RegexLiteral {
     wsAfter: string = "";
     unparse(parent?: Unparsable): string {
       return this.wsBefore + "/" +
-        this.regex.pattern.replace(/\\/g, "\\\\").replace(/\//g, "\\/") +
+        this.regex.pattern +
         "/" +
         this.regex.flags + this.wsAfter;
     }
