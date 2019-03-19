@@ -121,5 +121,9 @@ export function tokenize(code: string, options, delegate) {
 
 export { Syntax } from './syntax';
 
+import * as Node from './nodes';
+
+export { Node };
+
 // Sync with *.json manifests.
 export const version = '4.0.0-dev';
