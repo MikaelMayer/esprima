@@ -179,11 +179,7 @@
         } catch (e) {
             throw new NotMatchingError(expected, e.toString());
         }
-        if(typeof tree.unparse != "function") {
-          console.log("Tree.unparse not a function ");
-          console.log(tree);
-        }
-        assertEquality(code, tree.unparse());
+        assertEquality(code, esprima.Node.unparse(tree));
         assertEquality(expected, actual); // No equality anymore there
 
         function filter(key, value) {
@@ -207,13 +203,13 @@
                     tree.errors[i] = errorToObject(tree.errors[i]);
                 }
             }
-            tree2 = sortedObject(tree); // unparse is a method
+            tree2 = sortedObject(tree);
             actual = JSON.stringify(tree2, filter, 4);
         } catch (e) {
             throw new NotMatchingError(expected, e.toString());
         }
         assertEquality(expected, actual); // Whitespace makes it not equal
-        assertEquality(code, tree.unparse());
+        assertEquality(code, esprima.Node.unparse(tree));
 
         function collect(node) {
             nodes.push(node);
