@@ -1,13 +1,13 @@
 {
-  "name": "esprima",
-  "description": "ECMAScript parsing infrastructure for multipurpose analysis",
-  "homepage": "http://esprima.org",
+  "name": "esprima-bidirectional",
+  "description": "ECMAScript parsing and unparsing infrastructure for multipurpose analysis",
+  "homepage": "https://github.com/MikaelMayer/esprima.git",
   "main": "dist/esprima.js",
   "bin": {
     "esparse": "./bin/esparse.js",
     "esvalidate": "./bin/esvalidate.js"
   },
-  "version": "4.0.0-dev",
+  "version": "1.0.0-dev",
   "files": [
     "bin",
     "dist/esprima.js"
@@ -24,14 +24,19 @@
       "name": "Ariya Hidayat",
       "email": "ariya.hidayat@gmail.com",
       "web": "http://ariya.ofilabs.com"
+    },
+    {
+      "name": "Mikaël Mayer",
+      "email": "mikael.mayer_npm@m4x.org",
+      "web": "https://mikaelmayer.com"
     }
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/jquery/esprima.git"
+    "url": "https://github.com/MikaelMayer/esprima.git"
   },
   "bugs": {
-    "url": "https://github.com/jquery/esprima/issues"
+    "url": "https://github.com/MikaelMayer/esprima/issues"
   },
   "license": "BSD-2-Clause",
   "devDependencies": {

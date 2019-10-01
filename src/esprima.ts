@@ -27,7 +27,7 @@ import { JSXParser } from './jsx-parser';
 import { Parser } from './parser';
 import { Tokenizer } from './tokenizer';
 
-export function parse(code: string, options, delegate) {
+export function parse(code: string, options?, delegate?) {
     let commentHandler: CommentHandler | null = null;
     const proxyDelegate = (node, metadata) => {
         if (delegate) {
@@ -79,13 +79,13 @@ export function parse(code: string, options, delegate) {
     return ast;
 }
 
-export function parseModule(code: string, options, delegate) {
+export function parseModule(code: string, options?, delegate?) {
     const parsingOptions = options || {};
     parsingOptions.sourceType = 'module';
     return parse(code, parsingOptions, delegate);
 }
 
-export function parseScript(code: string, options, delegate) {
+export function parseScript(code: string, options?, delegate?) {
     const parsingOptions = options || {};
     parsingOptions.sourceType = 'script';
     return parse(code, parsingOptions, delegate);
